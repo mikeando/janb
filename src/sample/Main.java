@@ -10,12 +10,21 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception{
-        Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
-        primaryStage.setScene(new Scene(root, 300, 275));
+
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("sample.fxml"));
+        Parent root = fxmlLoader.load();
+
+        Model model = new Model();
+
+        Controller sampleController = (Controller) fxmlLoader.getController();
+        sampleController.model = model;
+
+        sampleController.createTreeView();
+
+        primaryStage.setScene(new Scene(root, 300, 550));
         primaryStage.setTitle("FXML Welcome");
         primaryStage.show();
     }
-
 
     public static void main(String[] args) {
         launch(args);
