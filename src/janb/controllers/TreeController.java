@@ -1,7 +1,7 @@
 package janb.controllers;
 
 import janb.Action;
-import janb.IModel;
+import janb.models.IModel;
 import janb.ui.ANBMainCell;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;

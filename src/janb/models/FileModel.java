@@ -1,5 +1,6 @@
-package janb;
+package janb.models;
 
+import janb.Action;
 import javafx.collections.ObservableList;
 import javafx.util.Pair;
 
@@ -8,10 +9,10 @@ import java.util.List;
 /**
  * Created by michaelanderson on 7/01/2015.
  */
-public class EventModel implements IModel {
+public class FileModel implements IModel {
     private String title;
 
-    public EventModel(String title) {
+    public FileModel(String title) {
         this.title = title;
     }
 

@@ -1,6 +1,7 @@
 package janb;
 
 import janb.controllers.Controller;
+import janb.models.Model;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

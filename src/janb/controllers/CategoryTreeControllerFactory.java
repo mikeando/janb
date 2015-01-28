@@ -1,7 +1,7 @@
 package janb.controllers;
 
 import com.sun.javafx.collections.ObservableListWrapper;
-import janb.IModel;
+import janb.models.IModel;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 

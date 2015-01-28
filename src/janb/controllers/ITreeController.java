@@ -1,6 +1,6 @@
 package janb.controllers;
 
-import janb.IModel;
+import janb.models.IModel;
 import janb.ui.ANBMainCell;
 import javafx.scene.control.TreeItem;
 

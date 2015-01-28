@@ -1,7 +1,7 @@
 package janb.controllers;
 
-import janb.DummyCategoryModel;
-import janb.Model;
+import janb.models.DummyCategoryModel;
+import janb.models.Model;
 import janb.ui.ANBMainCell;
 import janb.ui.ANBTreeCell;
 import javafx.collections.ListChangeListener;

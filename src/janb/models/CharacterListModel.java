@@ -1,6 +1,7 @@
-package janb;
+package janb.models;
 
 import com.sun.javafx.collections.ObservableListWrapper;
+import janb.Action;
 import javafx.collections.ObservableList;
 import javafx.util.Pair;
 

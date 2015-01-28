@@ -1,5 +1,6 @@
-package janb;
+package janb.models;
 
+import janb.Action;
 import javafx.collections.ObservableList;
 import javafx.util.Pair;
 
@@ -8,16 +9,17 @@ import java.util.List;
 /**
  * Created by michaelanderson on 7/01/2015.
  */
-public class FileModel implements IModel {
-    private String title;
+public class CharacterModel implements IModel {
+    private final String name;
 
-    public FileModel(String title) {
-        this.title = title;
+    public CharacterModel(String name) {
+        super();
+        this.name = name;
     }
 
     @Override
     public String getTitle() {
-        return title;
+        return name;
     }
 
     @Override

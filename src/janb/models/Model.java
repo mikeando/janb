@@ -1,6 +1,7 @@
-package janb;
+package janb.models;
 
 import com.sun.javafx.collections.ObservableListWrapper;
+import janb.Action;
 import javafx.collections.ObservableList;
 import javafx.util.Pair;
 
@@ -19,7 +20,7 @@ public class Model implements IModel {
     private final ObservableList<IModel> categories;
 
 
-    Model() {
+    public Model() {
         ArrayList<IModel> tempCategories = new ArrayList<>();
         tempCategories.add(characters);
         tempCategories.add(files);
