@@ -1,10 +1,11 @@
 package janb.controllers;
 
 import janb.models.DummyCategoryModel;
+import janb.models.IModelEventListener;
 import janb.models.Model;
+import janb.models.ModelEvent;
 import janb.ui.ANBMainCell;
 import janb.ui.ANBTreeCell;
-import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextArea;
@@ -12,8 +13,6 @@ import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.util.Callback;
-
-import java.util.List;
 
 public class Controller {
 
@@ -29,7 +28,7 @@ public class Controller {
     @FXML
     protected void dumpModel(ActionEvent actionEvent) {
         model.dump();
-        model.getCategories().add(new DummyCategoryModel());
+        model.addCategory(new DummyCategoryModel());
     }
 
 
@@ -49,62 +48,20 @@ public class Controller {
     }
 
 
-    public static class TreeControllerListChangeListener implements ListChangeListener<ITreeController> {
+    public static class TreeControllerModelEventListener extends IModelEventListener {
 
         private ITreeController treeController;
 
-        public TreeControllerListChangeListener(ITreeController treeController) {
+        public TreeControllerModelEventListener(ITreeController treeController) {
             this.treeController = treeController;
         }
 
         @Override
-        public void onChanged(Change<? extends ITreeController> c) {
-            System.err.printf("Got change event ... %s : %s\n", c.getClass().getName(), c);
-
-            while(c.next()) {
-
-                //NOTE: Can be both removal and addition - need to do removal first
-                if (c.wasRemoved()) {
-                    onRemoved(c);
-                }
-
-                if (c.wasAdded()) {
-                    onAdded(c);
-                }
-
-                if (c.wasPermutated()) {
-                    System.err.printf("Was a permutation ... \n");
-                }
-
-                if (c.wasUpdated()) {
-                    System.err.printf("Was an update ... \n");
-                }
-            }
-        }
-
-        protected void onRemoved(Change<? extends ITreeController> c) {
-            final TreeItem<ANBMainCell> item = treeController.getItem();
-            if(item !=null) {
-                item.getChildren().remove(c.getFrom(), c.getTo());
-            }
-            final List<? extends ITreeController> removed = c.getRemoved();
-            System.err.printf("Was a removal... %d - %d : %s \n", c.getFrom(), c.getTo(), removed);
-            removed.forEach(treeController::removeChild);
-        }
-
-        protected void onAdded(Change<? extends ITreeController> c) {
-            final TreeItem<ANBMainCell> item = treeController.getItem();
-
-            System.err.printf("Was an addition... %d - %d : %s \n", c.getFrom(), c.getTo(), c.getAddedSubList());
-            int i = c.getFrom();
-            for( ITreeController x:  c.getAddedSubList()) {
-
-                if(item !=null) {
-                    item.getChildren().add(i, x.getOrBuildTreeItem());
-                }
-
-                treeController.addChild(i, x);
-                ++i;
+        public void onEvent(ModelEvent event) {
+            System.err.printf("Got change event ... %s : %s\n", event.getClass().getName(), event);
+            System.err.printf("  on controller %s\n", treeController);
+            if(event instanceof ModelEvent.AddEvent) {
+                treeController.onModelAddChild((ModelEvent.AddEvent)event);
             }
         }
 

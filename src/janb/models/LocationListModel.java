@@ -1,35 +1,28 @@
 package janb.models;
 
-import com.sun.javafx.collections.ObservableListWrapper;
 import janb.Action;
-import javafx.collections.ObservableList;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by michaelanderson on 7/01/2015.
  */
-public class LocationListModel implements IModel {
+public class LocationListModel extends AbstractModel {
 
-    private final ObservableList<IModel> entries;
+    private final List<LocationModel> entries;
 
     LocationListModel() {
-        final ArrayList<IModel> entries = new ArrayList<>();
+        entries = new ArrayList<>();
         entries.add(new LocationModel("Some Location"));
         entries.add(new LocationModel("Another Location"));
-        this.entries = new ObservableListWrapper<>(entries);
     }
 
     @Override
     public String getTitle() {
         return "Locations";
-    }
-
-    @Override
-    public ObservableList<IModel> getEntries() {
-        return entries;
     }
 
     @Override
@@ -39,7 +32,15 @@ public class LocationListModel implements IModel {
         return actions;
     }
 
-    private void addNew() {
-        entries.add( new LocationModel("New Location"));
+    @Override
+    public List<IModel> getChildModels() {
+        return Collections.unmodifiableList(entries);
     }
+
+    private void addNew() {
+        final LocationModel locationModel = new LocationModel("New Location");
+        entries.add(locationModel);
+        publishEvent( ModelEvent.addEvent(this, locationModel, entries.size()-1));
+    }
+
 }

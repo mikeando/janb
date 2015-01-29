@@ -1,7 +1,6 @@
 package janb.models;
 
 import janb.Action;
-import javafx.collections.ObservableList;
 import javafx.util.Pair;
 
 import java.util.List;
@@ -9,7 +8,7 @@ import java.util.List;
 /**
  * Created by michaelanderson on 7/01/2015.
  */
-public class CharacterModel implements IModel {
+public class CharacterModel extends AbstractValueModel {
     private final String name;
 
     public CharacterModel(String name) {
@@ -20,11 +19,6 @@ public class CharacterModel implements IModel {
     @Override
     public String getTitle() {
         return name;
-    }
-
-    @Override
-    public ObservableList<IModel> getEntries() {
-        return null;
     }
 
     @Override

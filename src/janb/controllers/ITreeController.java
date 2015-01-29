@@ -1,6 +1,7 @@
 package janb.controllers;
 
 import janb.models.IModel;
+import janb.models.ModelEvent;
 import janb.ui.ANBMainCell;
 import javafx.scene.control.TreeItem;
 
@@ -19,4 +20,6 @@ public interface ITreeController {
     void removeChild(ITreeController controllers);
 
     void addChild(int index, ITreeController treeController);
+
+    void onModelAddChild(ModelEvent.AddEvent event);
 }

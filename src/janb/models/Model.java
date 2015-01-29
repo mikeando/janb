@@ -1,41 +1,28 @@
 package janb.models;
 
-import com.sun.javafx.collections.ObservableListWrapper;
 import janb.Action;
-import javafx.collections.ObservableList;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by michaelanderson on 24/12/2014.
  */
-public class Model implements IModel {
+public class Model extends AbstractModel {
 
     public final CharacterListModel characters = new CharacterListModel();
     public final FileListModel files = new FileListModel();
     public final LocationListModel locations = new LocationListModel();
     public final EventListModel events = new EventListModel();
-    private final ObservableList<IModel> categories;
-
+    List<IModel> extraCategories = new ArrayList<>();
 
     public Model() {
-        ArrayList<IModel> tempCategories = new ArrayList<>();
-        tempCategories.add(characters);
-        tempCategories.add(files);
-        tempCategories.add(locations);
-        tempCategories.add(events);
-
-        categories = new ObservableListWrapper<>(tempCategories);
     }
 
     public void dump() {
         System.err.printf("DUMPING MODEL\n");
-    }
-
-    public ObservableList<IModel> getCategories() {
-        return categories;
     }
 
     @Override
@@ -44,12 +31,23 @@ public class Model implements IModel {
     }
 
     @Override
-    public ObservableList<IModel> getEntries() {
-        return categories;
+    public List<Pair<String, Action>> getContextActions() {
+        return null;
     }
 
     @Override
-    public List<Pair<String, Action>> getContextActions() {
-        return null;
+    public List<IModel> getChildModels() {
+        ArrayList<IModel> models = new ArrayList<>();
+        models.add(characters);
+        models.add(files);
+        models.add(locations);
+        models.add(events);
+        models.addAll(extraCategories);
+        return Collections.unmodifiableList(models);
+    }
+
+    public void addCategory(IModel model) {
+        extraCategories.add(model);
+        publishEvent(ModelEvent.addEvent(this, model, getChildModels().size() - 1));
     }
 }

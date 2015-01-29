@@ -1,25 +1,23 @@
 package janb.models;
 
-import com.sun.javafx.collections.ObservableListWrapper;
 import janb.Action;
-import javafx.collections.ObservableList;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by michaelanderson on 7/01/2015.
  */
-public class CharacterListModel implements IModel {
+public class CharacterListModel extends AbstractModel {
 
-    private ObservableList<IModel> characters;
+    private List<CharacterModel> characters;
 
     CharacterListModel() {
-        ArrayList<IModel> entries = new ArrayList<>();
-        entries.add( new CharacterModel("Don"));
-        entries.add( new CharacterModel("Jane"));
-        characters = new ObservableListWrapper<>(entries);
+        characters = new ArrayList<>();
+        characters.add( new CharacterModel("Don"));
+        characters.add( new CharacterModel("Jane"));
     }
 
     @Override
@@ -28,12 +26,12 @@ public class CharacterListModel implements IModel {
     }
 
     @Override
-    public ObservableList<IModel> getEntries() {
-        return characters;
+    public List<Pair<String, Action>> getContextActions() {
+        return new ArrayList<>();
     }
 
     @Override
-    public List<Pair<String, Action>> getContextActions() {
-        return new ArrayList<>();
+    public List<IModel> getChildModels() {
+        return Collections.unmodifiableList(characters);
     }
 }

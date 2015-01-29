@@ -2,9 +2,9 @@ package janb.controllers;
 
 import janb.Action;
 import janb.models.IModel;
+import janb.models.IModelEventListener;
+import janb.models.ModelEvent;
 import janb.ui.ANBMainCell;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 import javafx.scene.control.TreeItem;
 import javafx.util.Pair;
 
@@ -18,7 +18,7 @@ import java.util.Map;
 */
 public class TreeController implements ITreeController {
 
-    protected final ObservableList<ITreeController> controllers;
+    protected final List<ITreeController> controllers;
     private final TreeControllerFactory factory;
     protected String title = null;
     TreeItem<ANBMainCell> item = null;
@@ -29,8 +29,9 @@ public class TreeController implements ITreeController {
 
     TreeController(TreeControllerFactory factory, IModel model) {
         this.factory = factory;
-        this.controllers = factory.mapObservable(model.getEntries());
+        this.controllers = factory.getChildControllersForModel(model);
         this.title = model.getTitle();
+        this.model = model;
 
         //TODO: When is this released? Is it a week reference?
         //TODO: If  a derived class overrides getListChangeListener, we wont get the right behaviour.
@@ -41,10 +42,10 @@ public class TreeController implements ITreeController {
         //      which will probably result in explosions later. So we probably need to split into
         //      two step construction with factory? (Unless we can get rid of the subclasses altogether
         //      which would be great.)
-        if(controllers!=null) {
-            ListChangeListener<ITreeController> listener = getListChangeListener();
-            controllers.addListener(listener);
+        IModelEventListener listener = getListChangeListener();
+        model.addListener(listener);
 
+        if (controllers != null) {
             for (ITreeController controller : controllers) {
                 if (controller == null)
                     throw new NullPointerException("controller should not be null");
@@ -56,8 +57,8 @@ public class TreeController implements ITreeController {
         }
     }
 
-    protected ListChangeListener<ITreeController> getListChangeListener() {
-        return new Controller.TreeControllerListChangeListener(this);
+    protected IModelEventListener getListChangeListener() {
+        return new Controller.TreeControllerModelEventListener(this);
     }
 
     String getTitle() {
@@ -92,6 +93,15 @@ public class TreeController implements ITreeController {
         controllers.add(index,treeController);
         IModel model = treeController.getModel();
         modelToController.put(model, treeController);
+        if(item!=null) {
+            item.getChildren().add(index, treeController.getOrBuildTreeItem());
+        }
+    }
+
+    @Override
+    public void onModelAddChild(ModelEvent.AddEvent event) {
+        System.err.printf("in TreeController.onModelAddChild()");
+        addChild(event.position, getTreeControllerFactory().controllerForModel(event.model));
     }
 
     @Override
@@ -115,9 +125,24 @@ public class TreeController implements ITreeController {
     }
 
     protected List<Pair<String, Action>> getContextActions() {
-        // The actions should come from the model I guess...
+        System.err.printf("Getting context actions for %s\n", this);
         final ArrayList<Pair<String, Action>> actions = new ArrayList<>();
+
+        if(model!=null) {
+            final List<Pair<String, Action>> modelContextActions = model.getContextActions();
+            if(modelContextActions!=null) {
+                actions.addAll(modelContextActions);
+            }
+        } else {
+            System.err.printf(" --- odd model == null in %s\n", this);
+        }
         actions.add( new Pair<>("Hello", () -> System.err.printf("Hello...")) );
+        System.err.printf("   actions are : %s\n", actions);
         return actions;
+    }
+
+    @Override
+    public String toString() {
+        return "{" + super.toString() + "title:\""+title+"\" : model:" + model + "}";
     }
 }
