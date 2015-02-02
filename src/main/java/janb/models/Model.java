@@ -24,13 +24,18 @@ public class Model extends AbstractModel {
 
     public void loadFromPath(File path) {
         System.err.printf("Loading root %s\n", path);
-        for( File f : path.listFiles()) {
+        final File[] fileList = path.listFiles();
+        if(fileList==null) {
+            System.err.printf("Unable to load root path %s, maybe it doesn't exist?", path);
+            return;
+        }
+        for( File f : fileList) {
             System.err.printf("Should be loading resource from %s\n", f);
             if(f.getPath().endsWith(".mxl")) {
                 System.err.printf("Got me a .mxl file :%s\n", f);
                 FileListModel.parseMXLFile(f);
             } else {
-                System.err.printf("Not a .mxl file - ignoring %s\n", f)
+                System.err.printf("Not a .mxl file - ignoring %s\n", f);
             }
 
         }
