@@ -3,6 +3,7 @@ package janb.models;
 import janb.Action;
 import javafx.util.Pair;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +20,21 @@ public class Model extends AbstractModel {
     List<IModel> extraCategories = new ArrayList<>();
 
     public Model() {
+    }
+
+    public void loadFromPath(File path) {
+        System.err.printf("Loading root %s\n", path);
+        for( File f : path.listFiles()) {
+            System.err.printf("Should be loading resource from %s\n", f);
+            if(f.getPath().endsWith(".mxl")) {
+                System.err.printf("Got me a .mxl file :%s\n", f);
+                FileListModel.parseMXLFile(f);
+            } else {
+                System.err.printf("Not a .mxl file - ignoring %s\n", f)
+            }
+
+        }
+
     }
 
     public void dump() {
