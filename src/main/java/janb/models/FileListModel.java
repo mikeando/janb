@@ -1,11 +1,11 @@
 package janb.models;
 
 import janb.Action;
+import janb.mxl.MxlConstructionException;
+import janb.mxl.MxlMetadataFile;
 import javafx.util.Pair;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,13 +43,35 @@ public class FileListModel extends AbstractModel {
         entries.add( new FileModel("New File"));
     }
 
-    public static void parseMXLFile(File f) {
-        //Later we want this file to be YAML format I think, but for now we'll just use a stupid text format.
-        try {
-            FileInputStream is = new FileInputStream(f);
+    public void loadFromPath(File path) {
+        System.err.printf("Loading root %s\n", path);
+        final File[] fileList = path.listFiles();
+        if(fileList==null) {
+            System.err.printf("Unable to load root path %s, maybe it doesn't exist?", path);
+            return;
+        }
+        for( File f : fileList) {
+            System.err.printf("Should be loading resource from %s\n", f);
+            if(f.getPath().endsWith(".mxl")) {
+                System.err.printf("Got me a .mxl file :%s\n", f);
+                MxlMetadataFile metadata = FileListModel.parseMXLFile(f);
+                System.err.printf("Metadata = %s\n", metadata);
+            } else {
+                System.err.printf("Not a .mxl file - ignoring %s\n", f);
+            }
+        }
+    }
 
-        } catch (IOException e){
-            System.err.printf("ERROR: Unable to load metadata file %s\n", f);
+
+
+    public static MxlMetadataFile parseMXLFile(File f) {
+        System.err.printf("Trying to open MXL file %s\n", f);
+        try {
+            return new MxlMetadataFile(f);
+        } catch (MxlConstructionException c) {
+            System.err.printf("Error getting metadata\n%s", c);
+            c.printStackTrace();
+            throw new RuntimeException("Error getting metadata", c);
         }
     }
 }
