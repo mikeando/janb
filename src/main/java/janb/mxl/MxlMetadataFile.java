@@ -50,7 +50,7 @@ public class MxlMetadataFile {
                 }
             } catch (YamlUtils.ConversionException e) {
                 throw new MxlConstructionException(
-                        String.format("Error loading YAML in .xml file '%s'", source),
+                        String.format("Error loading YAML in .mxl file '%s'", source),
                         e);
             }
         } catch (IOException e){
@@ -61,7 +61,14 @@ public class MxlMetadataFile {
         }
     }
 
+    public MxlMetadataFile() {
+    }
+
     public void addUnboundAnnotation(MxlUnboundAnnotation annotation) {
         annotations.add(annotation);
+    }
+
+    public List<MxlUnboundAnnotation> getUnboundAnnotations() {
+        return annotations;
     }
 }

@@ -2,10 +2,12 @@ package janb.models;
 
 import janb.Action;
 import janb.mxl.MxlConstructionException;
+import janb.mxl.MxlFile;
 import janb.mxl.MxlMetadataFile;
 import javafx.util.Pair;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +45,15 @@ public class FileListModel extends AbstractModel {
         entries.add( new FileModel("New File"));
     }
 
+    //TODO: This seems overkill - we should just put the list into a TreeSet or similar.
+    private boolean fileListContains(File[] fileList, File f) {
+        for(File ff:fileList) {
+            if(ff.equals(f))
+                return true;
+        }
+        return false;
+    }
+
     public void loadFromPath(File path) {
         System.err.printf("Loading root %s\n", path);
         final File[] fileList = path.listFiles();
@@ -51,14 +62,28 @@ public class FileListModel extends AbstractModel {
             return;
         }
         for( File f : fileList) {
-            System.err.printf("Should be loading resource from %s\n", f);
-            if(f.getPath().endsWith(".mxl")) {
-                System.err.printf("Got me a .mxl file :%s\n", f);
-                MxlMetadataFile metadata = FileListModel.parseMXLFile(f);
+
+            if(f.getPath().endsWith(".mxl"))
+                continue;
+
+            final File metadataFile = new File(f.toString() + ".mxl");
+            if (fileListContains(fileList, metadataFile)) {
+                System.err.printf("Found file with .mxl data : %s + %s\n", f, metadataFile);
+                MxlMetadataFile metadata = FileListModel.parseMXLFile(metadataFile);
                 System.err.printf("Metadata = %s\n", metadata);
-            } else {
-                System.err.printf("Not a .mxl file - ignoring %s\n", f);
+                try {
+                    MxlFile mxlFile = MxlFile.createAndBind(f, metadata);
+                    System.err.printf("MxlFile = %s\n", mxlFile);
+                } catch (IOException | MxlConstructionException e) {
+                    System.err.printf("ERROR unable to load file %s : %s\n", f, e.getMessage());
+                    e.printStackTrace();
+                }
+                continue;
             }
+
+
+            System.err.printf("No a .mxl file for %s - ignoring\n", f);
+
         }
     }
 
