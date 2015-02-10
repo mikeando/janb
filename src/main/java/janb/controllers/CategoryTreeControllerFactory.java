@@ -2,8 +2,8 @@ package janb.controllers;
 
 import janb.models.IModel;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
 * Created by michaelanderson on 20/01/2015.
@@ -23,10 +23,6 @@ public class CategoryTreeControllerFactory implements TreeControllerFactory {
         List<IModel> childModels = model.getChildModels();
         if(childModels==null)
             return null;
-        List<ITreeController> childControllers = new ArrayList<>();
-        for(IModel x : childModels) {
-            childControllers.add(controllerForModel(x));
-        }
-        return childControllers;
+        return childModels.stream().map(this::controllerForModel).collect(Collectors.toList());
     }
 }
