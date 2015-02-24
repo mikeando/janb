@@ -2,3 +2,6 @@ annotations :
   - { start : "⟪A⟪", end : "⟫A⟫", note: "A note" }
   - { start : "⟪B⟪", end : "⟫B⟫", note: "Another note" }
   - { start : "⟪C⟪", end : "⟫C⟫", note: "A final note" }
+characters :
+  - { name : "Donkey Kong" }
+  - { name : "CJ Cool" }

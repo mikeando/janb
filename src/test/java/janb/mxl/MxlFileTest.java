@@ -47,7 +47,7 @@ public class MxlFileTest {
         MxlFile file = MxlFile.createAndBind( new File(fileURL.getPath()),metadata);
         assertNotNull(file);
 
-        String data = file.getData();
+        String data = file.getText().getData();
         assertEquals("This is a note -\nits very interesting.",data);
     }
 

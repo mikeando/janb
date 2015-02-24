@@ -69,7 +69,7 @@ public class ANBTreeCell extends TreeCell<ANBMainCell> {
                 for( Pair<String, Action> x : item.contextMenu ) {
                     MenuItem menuItem = new MenuItem(x.getKey());
                     tempContextMenuItems.add(menuItem);
-                    EventHandler<ActionEvent> eh = event -> x.getValue().act();
+                    EventHandler<ActionEvent> eh = event -> x.getValue().act(item.controller);
                     menuItem.setOnAction(eh);
                 }
                 contextMenuItems.setAll(tempContextMenuItems);
@@ -84,7 +84,7 @@ public class ANBTreeCell extends TreeCell<ANBMainCell> {
         textField = new TextField(getString());
         textField.setOnKeyReleased(t -> {
             if (t.getCode() == KeyCode.ENTER) {
-                commitEdit(new ANBMainCell(textField.getText(), null));
+                commitEdit(new ANBMainCell(textField.getText(), null, null));
 
             } else if (t.getCode() == KeyCode.ESCAPE) {
                 cancelEdit();

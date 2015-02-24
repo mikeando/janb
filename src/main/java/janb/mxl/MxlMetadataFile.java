@@ -1,6 +1,6 @@
 package janb.mxl;
 
-import janb.yaml.YamlUtils;
+import janb.yaml.*;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
@@ -19,8 +19,6 @@ public class MxlMetadataFile {
     public MxlMetadataFile(File source) throws MxlConstructionException {
         this.source = source;
 
-
-        //Later we want this file to be YAML format I think, but for now we'll just use a stupid text format.
         try(FileInputStream is = new FileInputStream(source)) {
 
             //TODO: This should be shifted into YamlUtils.
@@ -33,22 +31,34 @@ public class MxlMetadataFile {
 
 
             try {
-                YamlUtils.YamlMap rootElement = YamlUtils.getRootAsMap(yamlData);
+                YamlMap rootElement = YamlUtils.getRootAsMap(yamlData);
 
-                YamlUtils.YamlList annotations = rootElement.getChildList("annotations");
-                for(int i=0; i<annotations.size(); ++i) {
-                    YamlUtils.YamlMap rawAnnotation = annotations.getChildMap(i);
-                    System.err.printf("Annotation %d = %s\n", i, rawAnnotation.getRawMap());
-                    MxlUnboundAnnotation ubannotation = new MxlUnboundAnnotation(
-                            rawAnnotation.getString("start"),
-                            rawAnnotation.getString("end"),
-                            rawAnnotation.getObject("note")
-                    );
+                rootElement.onAllChildren( new YamlMapCallback() {
+                   @Override
+                   public void onMap(String key, YamlMap value) {
 
-                    this.addUnboundAnnotation(ubannotation);
-                    System.err.printf("UnboundAnnotation = %s\n", ubannotation);
-                }
-            } catch (YamlUtils.ConversionException e) {
+                        System.err.printf("key=%s is a map : %s\n", key, value);
+                    }
+
+                    @Override
+                    public void onList(String key, YamlList value) throws MxlConstructionException {
+                        if(key.equals("annotations")) {
+                            buildAnnotations(value, source);
+                            return;
+                        }
+                        System.err.printf("key=%s is a list : %s\n", key, value);
+                    }
+
+                    @Override
+                    public void onString(String key, YamlString value) throws MxlConstructionException {
+                        throw new MxlConstructionException(
+                                String.format("Error loading YAML in .mxl file %s : Non map element found in root for key %s", source, key)
+                        );
+                    }
+
+                });
+
+            } catch (YamlConversionException e) {
                 throw new MxlConstructionException(
                         String.format("Error loading YAML in .mxl file '%s'", source),
                         e);
@@ -59,6 +69,27 @@ public class MxlMetadataFile {
                     e
             );
         }
+    }
+
+    private void buildAnnotations(YamlList value, File source) throws MxlConstructionException {
+        YamlList annotations = value;
+        for (int i = 0; i < annotations.size(); ++i) {
+            try {
+                YamlMap rawAnnotation = annotations.getChild(i).asMap();
+                System.err.printf("Annotation %d = %s\n", i, rawAnnotation.getRawMap());
+                MxlUnboundAnnotation ubannotation = new MxlUnboundAnnotation(
+                        rawAnnotation.getChild("start").asString().getRawData(),
+                        rawAnnotation.getChild("end").asString().getRawData(),
+                        rawAnnotation.getChild("note").getRawData() // Should just pass the YamlObject I guess - or convert it.
+                );
+
+                this.addUnboundAnnotation(ubannotation);
+                System.err.printf("UnboundAnnotation = %s\n", ubannotation);
+            } catch (YamlConversionException e) {
+                throw new MxlConstructionException(String.format("Invalid annotation annotation %d in file %s", i, source), e);
+            }
+        }
+        return;
     }
 
     public MxlMetadataFile() {

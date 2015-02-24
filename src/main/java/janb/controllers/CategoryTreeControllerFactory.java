@@ -10,12 +10,20 @@ import java.util.stream.Collectors;
 */
 public class CategoryTreeControllerFactory implements TreeControllerFactory {
 
+
+    private final IController rootController;
+
+    CategoryTreeControllerFactory(IController rootController) {
+
+        this.rootController = rootController;
+    }
+
     @Override
     public ITreeController controllerForModel(IModel model) {
 
         System.err.printf("Getting controller for model %s\n", model);
 
-        return new TreeController(this, model);
+        return new TreeController(this, model, rootController);
     }
 
     @Override

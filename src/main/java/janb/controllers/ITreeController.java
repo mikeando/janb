@@ -22,4 +22,6 @@ public interface ITreeController {
     void addChild(int index, ITreeController treeController);
 
     void onModelAddChild(ModelEvent.AddEvent event);
+
+    IController getRootController();
 }

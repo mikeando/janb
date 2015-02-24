@@ -10,12 +10,14 @@ import java.util.List;
 /**
  * Created by michaelanderson on 5/02/2015.
  */
-public class MxlFile {
+public class MxlFile implements IMxlFile {
     private final List<MxlAnnotation> annotations = new ArrayList<>();
+    private final String name;
     private String rawContent;
     private MxlText content;
 
-    public MxlFile(MxlMetadataFile metadata, String rawContent) throws MxlConstructionException {
+    public MxlFile(String name, MxlMetadataFile metadata, String rawContent) throws MxlConstructionException {
+        this.name = name;
         this.rawContent = rawContent;
         this.content = new MxlText(rawContent);
 
@@ -33,7 +35,7 @@ public class MxlFile {
 //            System.err.printf("AFTER END = '%s'\n", afterEnd);
 //            transformedContent = beforeEnd + afterEnd;
 
-            MxlAnnotation annotation = new MxlAnnotation(startLocation, endLocation);
+            MxlAnnotation annotation = new MxlAnnotation(startLocation, endLocation, x.data);
             annotations.add(annotation);
         }
     }
@@ -41,14 +43,26 @@ public class MxlFile {
     public static MxlFile createAndBind(File f, MxlMetadataFile metadata) throws IOException, MxlConstructionException {
         byte[] bytes = Files.readAllBytes(f.toPath());
         String content = new String(bytes, Charset.forName("UTF-8"));
-        return new MxlFile(metadata, content);
+        return new MxlFile(f.getName(), metadata, content);
     }
 
-    public String getData() {
-        return content.getData();
-    }
-
+    @Override
     public List<MxlAnnotation> getAnnotations() {
         return annotations;
+    }
+
+    @Override
+    public MxlText getText() {
+        return content;
+    }
+
+    @Override
+    public String getRawData() {
+        return rawContent;
+    }
+
+    @Override
+    public String getBaseName() {
+        return name;
     }
 }

@@ -27,10 +27,11 @@ public class Main extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(rootFxmlUrl);
         Parent root = fxmlLoader.load();
 
-        Model model = new Model();
-        model.loadFromPath(new File("/Users/michaelanderson/JANBData"));
-
         Controller sampleController = fxmlLoader.getController();
+
+        Model model = new Model();
+        model.loadFromPath(new File("/Users/michaelanderson/JANBData"), sampleController.getViewModel());
+
         sampleController.model = model;
 
         sampleController.createTreeView();

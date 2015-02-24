@@ -6,10 +6,12 @@ package janb.mxl;
 public class MxlAnnotation {
     private MxlTextLocation start;
     private MxlTextLocation end;
+    private Object data;
 
-    public MxlAnnotation(MxlTextLocation start, MxlTextLocation end) {
+    public MxlAnnotation(MxlTextLocation start, MxlTextLocation end, Object data) {
         this.start = start;
         this.end = end;
+        this.data = data;
     }
 
     public MxlTextLocation getStart() {
@@ -18,5 +20,9 @@ public class MxlAnnotation {
 
     public MxlTextLocation getEnd() {
         return end;
+    }
+
+    public Object getData() {
+        return data;
     }
 }

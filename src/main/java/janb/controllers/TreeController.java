@@ -19,6 +19,8 @@ import java.util.Map;
 public class TreeController implements ITreeController {
 
     protected final List<ITreeController> controllers;
+    protected final IController rootController;
+
     private final TreeControllerFactory factory;
     protected String title = null;
     TreeItem<ANBMainCell> item = null;
@@ -27,8 +29,9 @@ public class TreeController implements ITreeController {
     //Where is the model coming from?
     IModel model;
 
-    TreeController(TreeControllerFactory factory, IModel model) {
+    TreeController(TreeControllerFactory factory, IModel model, IController rootController) {
         this.factory = factory;
+        this.rootController = rootController;
         this.controllers = factory.getChildControllersForModel(model);
         this.title = model.getTitle();
         this.model = model;
@@ -105,6 +108,11 @@ public class TreeController implements ITreeController {
     }
 
     @Override
+    public IController getRootController() {
+        return rootController;
+    }
+
+    @Override
     public final TreeItem<ANBMainCell> getItem() {
         return item;
     }
@@ -115,7 +123,7 @@ public class TreeController implements ITreeController {
         if (item != null)
             return item;
 
-        item = new TreeItem<>(new ANBMainCell(getTitle(), getContextActions()));
+        item = new TreeItem<>(new ANBMainCell(getTitle(), getContextActions(), getRootController()));
         if (controllers != null) {
             for (ITreeController controller : controllers) {
                 item.getChildren().add(controller.getOrBuildTreeItem());
@@ -123,6 +131,8 @@ public class TreeController implements ITreeController {
         }
         return item;
     }
+
+
 
     protected List<Pair<String, Action>> getContextActions() {
         System.err.printf("Getting context actions for %s\n", this);
@@ -136,7 +146,12 @@ public class TreeController implements ITreeController {
         } else {
             System.err.printf(" --- odd model == null in %s\n", this);
         }
-        actions.add( new Pair<>("Hello", () -> System.err.printf("Hello...")) );
+        actions.add( new Pair<>("Hello", new Action() {
+            @Override
+            public void act(IController controller) {
+                System.err.printf("Hello...");
+            }
+        }  ) );
         System.err.printf("   actions are : %s\n", actions);
         return actions;
     }

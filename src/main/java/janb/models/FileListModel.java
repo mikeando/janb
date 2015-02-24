@@ -20,8 +20,6 @@ public class FileListModel extends AbstractModel {
 
     FileListModel() {
         entries = new ArrayList<>();
-        entries.add( new FileModel("Some File"));
-        entries.add( new FileModel("Another File"));
     }
 
     @Override
@@ -42,7 +40,8 @@ public class FileListModel extends AbstractModel {
     }
 
     private void addNew() {
-        entries.add( new FileModel("New File"));
+        throw new RuntimeException("FileListModel.addNew() not yet implemented");
+        //entries.add( new FileModel("New File"));
     }
 
     //TODO: This seems overkill - we should just put the list into a TreeSet or similar.
@@ -54,7 +53,7 @@ public class FileListModel extends AbstractModel {
         return false;
     }
 
-    public void loadFromPath(File path) {
+    public void loadFromPath(File path, IViewModel viewModel) {
         System.err.printf("Loading root %s\n", path);
         final File[] fileList = path.listFiles();
         if(fileList==null) {
@@ -73,6 +72,7 @@ public class FileListModel extends AbstractModel {
                 System.err.printf("Metadata = %s\n", metadata);
                 try {
                     MxlFile mxlFile = MxlFile.createAndBind(f, metadata);
+                    entries.add(new FileModel(mxlFile, viewModel));
                     System.err.printf("MxlFile = %s\n", mxlFile);
                 } catch (IOException | MxlConstructionException e) {
                     System.err.printf("ERROR unable to load file %s : %s\n", f, e.getMessage());
@@ -94,7 +94,7 @@ public class FileListModel extends AbstractModel {
         try {
             return new MxlMetadataFile(f);
         } catch (MxlConstructionException c) {
-            System.err.printf("Error getting metadata\n%s", c);
+            System.err.printf("Error getting metadata\n%s\n", c);
             c.printStackTrace();
             throw new RuntimeException("Error getting metadata", c);
         }

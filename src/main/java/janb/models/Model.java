@@ -17,6 +17,7 @@ public class Model extends AbstractModel {
     public final FileListModel files = new FileListModel();
     public final LocationListModel locations = new LocationListModel();
     public final EventListModel events = new EventListModel();
+    public final ScriptListModel scripts = new ScriptListModel();
     List<IModel> extraCategories = new ArrayList<>();
 
     public Model() {
@@ -43,6 +44,7 @@ public class Model extends AbstractModel {
         models.add(files);
         models.add(locations);
         models.add(events);
+        models.add(scripts);
         models.addAll(extraCategories);
         return Collections.unmodifiableList(models);
     }
@@ -52,7 +54,7 @@ public class Model extends AbstractModel {
         publishEvent(ModelEvent.addEvent(this, model, getChildModels().size() - 1));
     }
 
-    public void loadFromPath(File file) {
-        files.loadFromPath(file);
+    public void loadFromPath(File file, IViewModel viewModel) {
+        files.loadFromPath(file, viewModel);
     }
 }

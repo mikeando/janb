@@ -5,9 +5,7 @@ import javafx.util.Pair;
 
 import java.util.List;
 
-/**
- * A Marker interface.
- */
+
 public interface IModel {
     public abstract String getTitle();
 
