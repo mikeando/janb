@@ -4,6 +4,7 @@ import janb.models.*;
 import janb.mxl.IMxlFile;
 import janb.mxl.MxlAnnotation;
 import janb.mxl.MxlTextLocation;
+import janb.scripts.*;
 import janb.ui.ANBMainCell;
 import janb.ui.ANBStyle;
 import janb.ui.ANBTreeCell;
@@ -23,12 +24,13 @@ import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.*;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import org.fxmisc.richtext.InlineStyleTextArea;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Controller {
@@ -59,38 +61,58 @@ public class Controller {
         IController rootController = new IController() {
 
             @Override
-            public void presentScript(ScriptModel script) {
+            public void presentScript(ScriptModel scriptModel) {
 
                 Stage stage = new Stage();
 
                 Group root = new Group();
-                Scene s = new Scene(root, 300, 300, Color.BLACK);
-                Rectangle r = new Rectangle(25,25,250,250);
-                r.setFill(Color.BLUE);
-                root.getChildren().add(r);
+                Scene s = new Scene(root, 300, 300, Color.WHITE);
 
                 TextFlow textFlow = new TextFlow();
                 textFlow.setPrefWidth(250);
-                Text text1 = new Text("Some big red text ");
-                text1.setFill(Color.RED);
-                text1.setFont(Font.font("Helvetica", FontPosture.ITALIC, 40));
-                ChoiceBox cb = new ChoiceBox(FXCollections.observableArrayList("First", "Second", "Third")
-                );
-                cb.getSelectionModel().select(0);
-
-                Text text2 = new Text(" little bold orange text");
-                text2.setFill(Color.ORANGE);
-                text2.setFont(Font.font("Helvetica", FontWeight.BOLD, 10));
-                textFlow.getChildren().add(text1);
-                textFlow.getChildren().add(cb);
-                textFlow.getChildren().add(text2);
-
                 root.getChildren().add(textFlow);
 
                 stage.setScene(s);
                 stage.show();
 
-                System.err.printf("Presenting script %s : %s\n", script.getTitle(), script.getScript());
+                final Script script = scriptModel.getScript();
+                System.err.printf("Presenting script %s : %s\n", scriptModel.getTitle(), script);
+
+                ScriptBinder binding = new ScriptBinder() {
+                    @Override
+                    public BoundChoice getBoundChoice(String tag) {
+                        System.err.printf("Getting bound choice for %s\n", tag);
+                        return new BoundChoice("culture", FXCollections.observableArrayList("a culture", "another culture"));
+                    }
+
+                    @Override
+                    public void setUID(ArrayList<ScriptUIDBuilder.UIDElement> elements) {
+                        System.err.printf("Setting UID to %s\n", elements);
+                    }
+
+                    @Override
+                    public void addText(ArrayList<ScriptTextBuilder.TextElement> elements) {
+                        System.err.printf("Adding text : %s\n", elements);
+
+                        for(ScriptTextBuilder.TextElement x:elements) {
+                            if(x.text!=null) {
+                                Text text = new Text(x.text);
+                                //text.setFill(Color.ORANGE);
+                                //text.setFont(Font.font("Helvetica", FontWeight.BOLD, 10));
+                                textFlow.getChildren().add(text);
+                            }
+                            if(x.choice!=null) {
+                                ChoiceBox cb = new ChoiceBox(x.choice.values);
+                                cb.getSelectionModel().select(0);
+                                textFlow.getChildren().add(cb);
+                            }
+                        }
+                    }
+                };
+
+                script.setBinder(binding);
+                script.action();
+                script.clearBinder();
 
             }
         };

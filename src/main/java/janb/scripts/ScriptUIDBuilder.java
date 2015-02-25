@@ -8,20 +8,39 @@ import java.util.ArrayList;
 public class ScriptUIDBuilder {
 
 
+    private final Script script;
+
     public static class UIDElement {
 
+        public UIDElement(String key, BoundChoice choice) {
+            this.key = key;
+            this.choice = choice;
+        }
+
         public static UIDElement fromString(String key) {
-            return new UIDElement();
+            return new UIDElement(key, null);
         }
 
         public static UIDElement fromChoice(BoundChoice choice) {
-            return new UIDElement();
+            return new UIDElement(null, choice);
+        }
+
+        String key;
+        BoundChoice choice;
+
+        @Override
+        public String toString() {
+            return "UIDElement{" +
+                    "key='" + key + '\'' +
+                    ", choice=" + choice +
+                    '}';
         }
     }
 
     ArrayList<UIDElement> elements = new ArrayList<>();
 
     public ScriptUIDBuilder(Script script) {
+        this.script = script;
     }
 
     public ScriptUIDBuilder add(String key) {
@@ -29,9 +48,12 @@ public class ScriptUIDBuilder {
         return this;
     }
 
-
     public ScriptUIDBuilder add(BoundChoice choice) {
         elements.add(UIDElement.fromChoice(choice));
         return this;
+    }
+
+    public void done() {
+        script.createUID(elements);
     }
 }

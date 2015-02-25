@@ -5,10 +5,11 @@ package janb.scripts;
  */
 public class Death extends Script {
 
-    @Override void action() {
+    @Override
+    public void action() {
         BoundChoice culture = getBoundChoice("culture");
-        uidBuilder().add("death").add(culture);
-        textBuilder().add("What does ").add(culture).add(" believe about death?");
+        uidBuilder().add("death").add(culture).done();
+        textBuilder().add("What does ").add(culture).add(" believe about death?").done();
     }
 
     @Override
