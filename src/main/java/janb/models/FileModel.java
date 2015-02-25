@@ -1,6 +1,7 @@
 package janb.models;
 
 import janb.Action;
+import janb.controllers.IController;
 import janb.mxl.IMxlFile;
 import janb.mxl.MxlAnnotation;
 import javafx.util.Pair;
@@ -45,13 +46,13 @@ public class FileModel extends AbstractModel {
     }
 
     //TODO: These need to be two-way bindings.
-    private void openFile() {
+    private void openFile(IController iController) {
         viewModel.showContent(file);
     }
 
 
     @Override
     public List<IModel> getChildModels() {
-        return new ArrayList<IModel>(annotations);
+        return new ArrayList<>(annotations);
     }
 }

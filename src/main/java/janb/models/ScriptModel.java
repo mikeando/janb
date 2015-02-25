@@ -31,12 +31,9 @@ public class ScriptModel extends AbstractValueModel{
     @Override
     public List<Pair<String, Action>> getContextActions() {
         List<Pair<String, Action>> actions = new ArrayList<>();
-        actions.add(new Pair<>("test", new Action() {
-            @Override
-            public void act(IController controller) {
-                controller.presentScript(ScriptModel.this);
-                System.err.printf("SCRIPT TEST\n");
-            }
+        actions.add(new Pair<>("test", (IController controller) -> {
+            controller.presentScript(ScriptModel.this);
+            System.err.printf("SCRIPT TEST\n");
         }));
 
         return actions;

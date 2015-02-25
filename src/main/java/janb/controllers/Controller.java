@@ -131,21 +131,9 @@ public class Controller {
 
         textArea = new InlineStyleTextArea<>(ANBStyle.defaultStyle, ANBStyle::toCss);
 
-        ChangeListener<String> listener = new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                System.err.printf("Got a change to observable %s :\n   oldValue '%s'\n   new Value '%s'", observable, oldValue, newValue);
-            }
-        };
+        ChangeListener<String> listener = (ObservableValue<? extends String> observable, String oldValue, String newValue) -> System.err.printf("Got a change to observable %s :\n   oldValue '%s'\n   new Value '%s'", observable, oldValue, newValue);
         textArea.textProperty().addListener(listener);
-        ListChangeListener<? super CharSequence> paragraphListener = new ListChangeListener<CharSequence>() {
-            @Override
-            public void onChanged(Change<? extends CharSequence> c) {
-                //TODO: Seems that we dont get the before and after state, only the after state.
-                //      in both the before and after fields. (At least according to toString!)
-                System.err.printf("Got a paragraph change : %s\n", c);
-            }
-        };
+        ListChangeListener<? super CharSequence> paragraphListener = (ListChangeListener.Change<? extends CharSequence> c) -> System.err.printf("Got a paragraph change : %s\n", c);
 
         textHolder.getChildren().add(textArea);
 
@@ -166,7 +154,7 @@ public class Controller {
 
     public IViewModel getViewModel() {
 
-        IViewModel viewModel = new IViewModel() {
+        return new IViewModel() {
             @Override
             public void showContent(IMxlFile file) {
 
@@ -180,12 +168,7 @@ public class Controller {
 
                 System.err.printf("on key pressed = %s\n", textArea.getOnKeyPressed());
                 textArea.onKeyPressedProperty();
-                EventHandler<KeyEvent> handler =  new EventHandler<KeyEvent>() {
-                    @Override
-                    public void handle(KeyEvent event) {
-                        System.err.printf("Got pressed event %s\n", event);
-                    }
-                };
+                EventHandler<KeyEvent> handler = (KeyEvent event) -> System.err.printf("Got pressed event %s\n", event);
                 textArea.setOnKeyPressed(handler);
 
                 //EventHandler<? super KeyEvent> ctrlS = EventHandlerHelper
@@ -196,7 +179,6 @@ public class Controller {
 
             }
         };
-        return viewModel;
     }
 
 

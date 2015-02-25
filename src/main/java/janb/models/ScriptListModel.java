@@ -2,7 +2,6 @@ package janb.models;
 
 import janb.Action;
 import janb.scripts.Death;
-import janb.scripts.Script;
 import javafx.util.Pair;
 
 import java.util.ArrayList;

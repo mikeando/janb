@@ -14,9 +14,8 @@ public class FileModelTest {
 
     @Test
     public void testConstructorThrowsNPE() throws Exception {
-        IMxlFile file = null;
         try {
-            FileModel model = new FileModel(file, null);
+            FileModel model = new FileModel(null, null);
             fail("Should have thrown");
         } catch( NullPointerException npe) {
 

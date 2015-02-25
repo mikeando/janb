@@ -71,8 +71,7 @@ public class MxlMetadataFile {
         }
     }
 
-    private void buildAnnotations(YamlList value, File source) throws MxlConstructionException {
-        YamlList annotations = value;
+    private void buildAnnotations(YamlList annotations, File source) throws MxlConstructionException {
         for (int i = 0; i < annotations.size(); ++i) {
             try {
                 YamlMap rawAnnotation = annotations.getChild(i).asMap();
@@ -89,7 +88,6 @@ public class MxlMetadataFile {
                 throw new MxlConstructionException(String.format("Invalid annotation annotation %d in file %s", i, source), e);
             }
         }
-        return;
     }
 
     public MxlMetadataFile() {
