@@ -58,17 +58,27 @@ public class EntitySource implements IEntitySource {
         //TODO: Check it doesn't already exist.
         //TODO: Perform some sanity tests on the name.
         //      e.g. only a-z lower case, 0-9, _
-        return new CharacterBlock(entityType.id().child(name), getWritableLocationForEntityType(entityType).child(name));
+        return new CharacterBlock(entityType.id().child(name), getWritableLocationForEntityType(entityType).child(name), entityType);
     }
 
     @Override
-    public IEntityDB.ICharacterBlock getEntityByName(String a_character) {
+    public IEntityDB.ICharacterBlock getEntityByName(String name) {
+        for(IEntityDB.ICharacterBlock e:entities) {
+            if(e.id().shortName().equals(name))
+                return e;
+        }
         return null;
     }
 
     @Override
     public List<IEntityDB.ICharacterBlock> getEntitiesOfType(EntityType type) {
-        return null;
+        List<IEntityDB.ICharacterBlock> result = new ArrayList<>();
+        for(IEntityDB.ICharacterBlock e:entities) {
+            if(e.getType()==type) {
+                result.add(e);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -78,11 +88,10 @@ public class EntitySource implements IEntitySource {
 
     public void addRoot(String s) {
         ANBFile root = fileSystem.getFileForString(s);
-        loadEntitiesForPath(root,root);
-
+        loadEntitiesForPath(root,root, getOrCreateEntityType(new IEntityDB.EntityID()));
     }
 
-    private void loadEntitiesForPath(ANBFile root, ANBFile file) {
+    private void loadEntitiesForPath(ANBFile root, ANBFile file, EntityType entityType) {
         final List<ANBFile> files = fileSystem.getAllFiles(file);
         if(files==null)
             throw new RuntimeException("ANBFileSystem returned null");
@@ -92,22 +101,29 @@ public class EntitySource implements IEntitySource {
                 final List<String> path = f.relative_path(root);
                 IEntityDB.EntityID id = new IEntityDB.EntityID(path);
 
-                EntityType type = typesMap.get(id);
-                if(type==null) {
-                    type = createEntityType(id);
-                }
+                EntityType type = getOrCreateEntityType(id);
                 type.addPath(f);
 
-                loadEntitiesForPath(root, f);
+                loadEntitiesForPath(root, f, type);
             } else {
-                parseEntity(root, f);
+                parseEntity(root, f, entityType);
             }
         }
     }
 
-    private void parseEntity(ANBFile root, ANBFile f) {
-        createEntity(root, f);
+    private EntityType getOrCreateEntityType(IEntityDB.EntityID id) {
+        EntityType type = typesMap.get(id);
+        if(type==null) {
+            type = createEntityType(id);
+        }
+        return type;
     }
+
+    private void parseEntity(ANBFile root, ANBFile f, EntityType entityType) {
+        createEntity(root, f, entityType);
+    }
+
+
 
     protected EntityType createEntityType(IEntityDB.EntityID id) {
         EntityType type = new EntityType(id);
@@ -116,8 +132,8 @@ public class EntitySource implements IEntitySource {
         return type;
     }
 
-    protected void createEntity(ANBFile root, ANBFile f) {
-        entities.add(new CharacterBlock(new IEntityDB.EntityID(f.relative_path(root)), f));
+    protected void createEntity(ANBFile root, ANBFile f, EntityType entityType) {
+        entities.add(new CharacterBlock(new IEntityDB.EntityID(f.relative_path(root)), f, entityType));
     }
 
     @Override

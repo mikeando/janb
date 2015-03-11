@@ -248,7 +248,7 @@ public class EntitySourceTest {
 
         // Check
         assertThat(entityTypes, is(notNullValue()));
-        assertThat(entityTypes.size(), is(0));
+        assertThat(entityTypes.size(), is(1));
     }
 
     @Test public void testCanGetEntityTypesOneLevelDeep() {
@@ -264,10 +264,12 @@ public class EntitySourceTest {
 
         // Check
         assertThat(entityTypes, is(notNullValue()));
-        assertThat(entityTypes.size(), is(2));
+        assertThat(entityTypes.size(), is(3));
 
-        assertThat(entityTypes.get(0).components(), is(equalTo(asList("a_type"))));
-        assertThat(entityTypes.get(1).components(), is(equalTo(asList("b_type"))));
+        assertThat(entityTypes.get(0).components(), is(equalTo(asList())));
+        assertThat(entityTypes.get(1).components(), is(equalTo(asList("a_type"))));
+        assertThat(entityTypes.get(2).components(), is(equalTo(asList("b_type"))));
+
     }
 
     @Test public void testCanGetEntityTypesTwoLevelsDeep() {
@@ -306,10 +308,12 @@ public class EntitySourceTest {
 
         // Check
         assertThat(entityTypes, is(notNullValue()));
-        assertThat(entityTypes.size(), is(2));
+        assertThat(entityTypes.size(), is(3));
 
-        assertThat(entityTypes.get(0).components(), is(equalTo(asList("a"))));
-        assertThat(entityTypes.get(1).components(), is(equalTo(asList("a", "b"))));
+        assertThat(entityTypes.get(0).components(), is(equalTo(asList())));
+        assertThat(entityTypes.get(1).components(), is(equalTo(asList("a"))));
+        assertThat(entityTypes.get(2).components(), is(equalTo(asList("a", "b"))));
+
     }
 
     /**

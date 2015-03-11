@@ -88,6 +88,8 @@ public interface IEntityDB {
         byte[] readContents();
         void saveContents(byte[] data);
         ANBFile getFile();
+
+        IEntitySource.EntityType getType();
     }
 
     public static interface EntityDBEventListener {
