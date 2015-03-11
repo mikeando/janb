@@ -1,6 +1,7 @@
 package janb.models;
 
 import janb.Action;
+import janb.controllers.IController;
 import janb.mxl.MxlConstructionException;
 import janb.mxl.MxlFile;
 import janb.mxl.MxlMetadataFile;
@@ -39,7 +40,7 @@ public class FileListModel extends AbstractModel {
         return Collections.unmodifiableList(entries);
     }
 
-    private void addNew() {
+    private void addNew(IController controller) {
         throw new RuntimeException("FileListModel.addNew() not yet implemented");
         //entries.add( new FileModel("New File"));
     }

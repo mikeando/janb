@@ -28,7 +28,7 @@ public class LocationListModel extends AbstractModel {
     @Override
     public List<Pair<String, Action>> getContextActions() {
         ArrayList<Pair<String,Action>> actions = new ArrayList<>();
-        actions.add( new Pair<>("Add Location", this::addNew));
+        actions.add( new Pair<>("Add Location", (controller) -> this.addNew()));
         return actions;
     }
 

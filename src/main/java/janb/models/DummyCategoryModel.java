@@ -27,7 +27,7 @@ public class DummyCategoryModel extends AbstractModel {
     @Override
     public List<Pair<String, Action>> getContextActions() {
         ArrayList<Pair<String, Action>> actions = new ArrayList<>();
-        actions.add(new Pair<>("Add Dummy", this::addNew));
+        actions.add(new Pair<>("Add Dummy", (controller) -> addNew()));
         return actions;
     }
 
