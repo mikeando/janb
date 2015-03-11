@@ -14,11 +14,12 @@ public class FileModelTest {
 
     @Test
     public void testConstructorThrowsNPE() throws Exception {
+        //noinspection EmptyCatchBlock
         try {
             FileModel model = new FileModel(null, null);
             fail("Should have thrown");
         } catch( NullPointerException npe) {
-
+            // Intentionally empty.
         }
     }
 

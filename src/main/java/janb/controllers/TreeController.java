@@ -146,12 +146,7 @@ public class TreeController implements ITreeController {
         } else {
             System.err.printf(" --- odd model == null in %s\n", this);
         }
-        actions.add( new Pair<>("Hello", new Action() {
-            @Override
-            public void act(IController controller) {
-                System.err.printf("Hello...");
-            }
-        }  ) );
+        actions.add( new Pair<>("Hello", controller -> System.err.printf("Hello...")) );
         System.err.printf("   actions are : %s\n", actions);
         return actions;
     }

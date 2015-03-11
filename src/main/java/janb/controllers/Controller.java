@@ -102,7 +102,7 @@ public class Controller {
                                 textFlow.getChildren().add(text);
                             }
                             if(x.choice!=null) {
-                                ChoiceBox cb = new ChoiceBox(x.choice.values);
+                                ChoiceBox<String> cb = new ChoiceBox<>(x.choice.values);
                                 cb.getSelectionModel().select(0);
                                 textFlow.getChildren().add(cb);
                             }

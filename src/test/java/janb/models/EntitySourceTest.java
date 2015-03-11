@@ -28,7 +28,6 @@ public class EntitySourceTest {
         private Map<ANBFile, List<ANBFile>> childrenOfFile = new HashMap<>();
 
         private final JUnitRuleMockery context;
-        private Map<ANBFile, ANBFile> parentOfFile = new HashMap<>();
 
         private SimpleFileSystemDetails(JUnitRuleMockery context) {
             this.context = context;
@@ -96,7 +95,6 @@ public class EntitySourceTest {
 
         public void addChild(ANBFile parent, ANBFile child) {
             childrenOfFile.get(parent).add(child);
-            parentOfFile.put(child,parent);
         }
 
 
@@ -334,7 +332,7 @@ public class EntitySourceTest {
         final List<ANBFile> sourceLocations = entityType.getSourceLocations();
         assertThat(sourceLocations,is(notNullValue()));
         List<String> paths = sourceLocations.stream()
-                .map(sourceLocation -> sourceLocation.pathAsString())
+                .map(ANBFile::pathAsString)
                 .collect(Collectors.toList());
         Collections.sort(paths);
         assertThat(paths, is(equalTo(asList(

@@ -4,6 +4,7 @@ import janb.util.ANBFile;
 import janb.util.ANBFileSystem;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by michaelanderson on 27/02/2015.
@@ -72,12 +73,9 @@ public class EntitySource implements IEntitySource {
 
     @Override
     public List<IEntityDB.ICharacterBlock> getEntitiesOfType(EntityType type) {
-        List<IEntityDB.ICharacterBlock> result = new ArrayList<>();
-        for(IEntityDB.ICharacterBlock e:entities) {
-            if(e.getType()==type) {
-                result.add(e);
-            }
-        }
+        List<IEntityDB.ICharacterBlock> result = entities.stream()
+                .filter(e -> e.getType() == type)
+                .collect(Collectors.toList());
         return result;
     }
 

@@ -35,9 +35,7 @@ public interface IEntityDB {
 
             EntityID entityID = (EntityID) o;
 
-            if (!id.equals(entityID.id)) return false;
-
-            return true;
+            return id.equals(entityID.id);
         }
 
         @Override
