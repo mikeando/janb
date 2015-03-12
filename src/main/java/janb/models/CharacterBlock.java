@@ -2,6 +2,8 @@ package janb.models;
 
 import janb.util.ANBFile;
 
+import java.io.IOException;
+
 /**
  * Created by michaelanderson on 9/03/2015.
  */
@@ -22,12 +24,12 @@ public class CharacterBlock implements IEntityDB.ICharacterBlock {
     }
 
     @Override
-    public byte[] readContents() {
+    public byte[] readContents() throws IOException {
         return file.getFS().readFileContents(file);
     }
 
     @Override
-    public void saveContents(byte[] data) {
+    public void saveContents(byte[] data) throws IOException {
         file.getFS().writeFileContents(file, data);
     }
 

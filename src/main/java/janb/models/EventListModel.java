@@ -13,11 +13,32 @@ import java.util.List;
 public class EventListModel extends AbstractModel {
 
     private final List<EventModel> entries;
+    IEntityToModelConverter converter = new IEntityToModelConverter() {
 
-    EventListModel() {
+        @Override
+        public EventModel toModel(IEntityDB.ICharacterBlock entity) {
+            return new EventModel(entity.id().asString());
+        }
+    };
+
+    EventListModel(IEntitySource entitySource) {
         entries = new ArrayList<>();
-        entries.add( new EventModel("Some Event"));
-        entries.add( new EventModel("Another Event"));
+        entries.add( new EventModel("X Some Event"));
+        entries.add( new EventModel("X Another Event"));
+
+        IEntityDB.EntityID eventTypeID = IEntityDB.EntityID.fromComponents("events");
+        final IEntitySource.EntityType eventType = entitySource.getEntityTypeByID(eventTypeID);
+        if(eventType==null) {
+            System.err.printf("WARNING: No events of type 'entity' loaded.");
+            return;
+        }
+
+        final List<IEntityDB.ICharacterBlock> eventEntities = entitySource.getEntitiesOfType(eventType);
+        for(IEntityDB.ICharacterBlock event:eventEntities) {
+            EventModel eventModel = converter.toModel(event);
+            if(eventModel!=null)
+                entries.add(eventModel);
+        }
     }
 
     @Override

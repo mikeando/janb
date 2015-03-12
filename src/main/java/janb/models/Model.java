@@ -13,14 +13,20 @@ import java.util.List;
  */
 public class Model extends AbstractModel {
 
-    public final CharacterListModel characters = new CharacterListModel();
-    public final FileListModel files = new FileListModel();
-    public final LocationListModel locations = new LocationListModel();
-    public final EventListModel events = new EventListModel();
-    public final ScriptListModel scripts = new ScriptListModel();
-    List<IModel> extraCategories = new ArrayList<>();
+    public final CharacterListModel characters;
+    public final FileListModel files;
+    public final LocationListModel locations;
+    public final EventListModel events;
+    public final ScriptListModel scripts;
+    List<IModel> extraCategories;
 
-    public Model() {
+    public Model(IEntitySource entitySource) {
+        characters = new CharacterListModel();
+        files = new FileListModel();
+        locations = new LocationListModel();
+        events = new EventListModel(entitySource);
+        scripts = new ScriptListModel();
+        extraCategories = new ArrayList<>();
     }
 
     public void dump() {

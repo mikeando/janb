@@ -3,6 +3,7 @@ package janb.models;
 import janb.util.ANBFile;
 import janb.util.ANBFileSystem;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,7 +30,7 @@ public class EntitySource implements IEntitySource {
     @Override
     public EntityType getEntityTypeByShortName(String name) {
         for(EntityType entityType:types) {
-            if(entityType.shortName().equals(name))
+            if(Objects.equals(entityType.shortName(), name))
                 return entityType;
         }
         return null;
@@ -46,7 +47,12 @@ public class EntitySource implements IEntitySource {
 
         // It's not writable, fall back to the default location.
         ANBFile defaultEntityDir = getDefaultEntityDir();
-        return fileSystem.makePaths(defaultEntityDir, entityType.components());
+        try {
+            return fileSystem.makePaths(defaultEntityDir, entityType.components());
+        } catch( IOException e) {
+            System.err.printf("WARNING: Unable to open default directory: %s", e);
+            return null;
+        }
     }
 
     //TODO: Implement me.
@@ -59,6 +65,7 @@ public class EntitySource implements IEntitySource {
         //TODO: Check it doesn't already exist.
         //TODO: Perform some sanity tests on the name.
         //      e.g. only a-z lower case, 0-9, _
+        //      though we really should allow a bigger subset of utf8
         return new CharacterBlock(entityType.id().child(name), getWritableLocationForEntityType(entityType).child(name), entityType);
     }
 
@@ -136,17 +143,13 @@ public class EntitySource implements IEntitySource {
 
     @Override
     public EntityType getEntityTypeByID(IEntityDB.EntityID id) {
-        for(EntityType entityType:types) {
-            if(entityType.id().equals(id))
-                return entityType;
-        }
-        return null;
+        return typesMap.get(id);
     }
 
     @Override
     public IEntityDB.ICharacterBlock getEntityById(IEntityDB.EntityID id) {
         for(IEntityDB.ICharacterBlock entity:entities) {
-            if(entity.id().equals(id))
+            if(entity!=null && Objects.equals(entity.id(),id))
                 return entity;
         }
         return null;

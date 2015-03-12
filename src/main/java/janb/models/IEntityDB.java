@@ -2,6 +2,7 @@ package janb.models;
 
 import janb.util.ANBFile;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -43,25 +44,6 @@ public interface IEntityDB {
             return id.hashCode();
         }
 
-        //TODO: Doesn't belong in here.
-        public static String randomString() {
-            Random r = new Random();
-
-            char[] map = {
-                    'a','b','c','d','e','f','g','h',
-                    'i','j','k','l','m','n','o','p',
-                    'q','r','s','t','u','v','w','x',
-                    'y','z','0','1','2','3','4','5',
-                    '6','7','8','9'};
-
-            String id = "";
-            for(int i=0;i<16;++i) {
-                id += r.nextInt(map.length);
-            }
-
-            return id;
-        }
-
         public static EntityID fromComponents(String... components) {
             return new EntityID(Arrays.asList(components));
         }
@@ -83,8 +65,8 @@ public interface IEntityDB {
 
     public static interface ICharacterBlock {
         EntityID id();
-        byte[] readContents();
-        void saveContents(byte[] data);
+        byte[] readContents() throws IOException;
+        void saveContents(byte[] data) throws IOException;
         ANBFile getFile();
 
         IEntitySource.EntityType getType();
