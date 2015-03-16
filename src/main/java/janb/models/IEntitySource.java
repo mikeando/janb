@@ -24,6 +24,8 @@ public interface IEntitySource {
 
     IEntityDB.ICharacterBlock getEntityById(IEntityDB.EntityID id);
 
+    List<EntityType> getSubtypesOf(EntityType entityType);
+
     public static class EntityType {
         private final List<ANBFile> locations = new ArrayList<>(1);
         private final IEntityDB.EntityID id;

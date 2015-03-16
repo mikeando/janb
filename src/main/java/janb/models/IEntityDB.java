@@ -61,6 +61,18 @@ public interface IEntityDB {
                 return "";
             return id.get(id.size()-1);
         }
+
+        public static boolean isDirectChild(EntityID idParent, EntityID idChild) {
+            if(idChild.id.size()!=idParent.id.size()+1)
+                return false;
+            ArrayList<String> parentComponents = idParent.id;
+            ArrayList<String> childComponents = idChild.id;
+            for (int i = 0; i < parentComponents.size(); i++) {
+                if(!Objects.equals( childComponents.get(i), parentComponents.get(i)))
+                    return false;
+            }
+            return true;
+        }
     }
 
     public static interface ICharacterBlock {

@@ -80,10 +80,9 @@ public class EntitySource implements IEntitySource {
 
     @Override
     public List<IEntityDB.ICharacterBlock> getEntitiesOfType(EntityType type) {
-        List<IEntityDB.ICharacterBlock> result = entities.stream()
+        return entities.stream()
                 .filter(e -> e.getType() == type)
                 .collect(Collectors.toList());
-        return result;
     }
 
     @Override
@@ -135,6 +134,14 @@ public class EntitySource implements IEntitySource {
         types.add(type);
         typesMap.put(id,type);
         return type;
+    }
+
+    @Override
+    public List<EntityType> getSubtypesOf(EntityType entityType) {
+        return typesMap.values()
+                .stream()
+                .filter(type -> IEntityDB.EntityID.isDirectChild(entityType.id(), type.id()))
+                .collect(Collectors.toList());
     }
 
     protected void createEntity(ANBFile root, ANBFile f, EntityType entityType) {

@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Created by michaelanderson on 7/01/2015.
+ * @todo make this work through the entity source.
  */
 public class FileListModel extends AbstractModel {
     private final List<FileModel> entries;
