@@ -7,7 +7,7 @@ import janb.project.ProjectDB;
  */
 public class DefaultEntityMapper implements EntityMapper {
     @Override
-    public Entity mapToEntity(ProjectDB.EntityField e1) {
+    public Entity mapToEntity(ProjectDB.DBField e1) {
         return null;
     }
 }

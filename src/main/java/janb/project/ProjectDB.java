@@ -78,27 +78,27 @@ import java.util.Map;
  */
 public class ProjectDB {
 
-    public interface EntityField {
-        MutableEntityField mutableCopy();
-        ConstEntityField constCopy();
+    public interface DBField {
+        MutableDBField mutableCopy();
+        ConstDBField constCopy();
         EntityID getLocation();
         void visit(EntityVisitor entityVisitor);
     }
 
     //TODO: Rename me
-    public interface ConstEntityField extends EntityField {
+    public interface ConstDBField extends DBField {
         void visit(ConstEntityVisitor entityVisitor);
 
     }
 
-    public interface MutableEntityField extends EntityField {
+    public interface MutableDBField extends DBField {
 
     }
 
-    public static abstract class AbstractConstEntityField implements ConstEntityField {
+    public static abstract class AbstractConstDBField implements ConstDBField {
         final EntityID location;
 
-        public AbstractConstEntityField(EntityID location) {
+        public AbstractConstDBField(EntityID location) {
             this.location = location;
         }
 
@@ -110,10 +110,10 @@ public class ProjectDB {
 
 
 
-    public static abstract class AbstractMutableEntityField implements MutableEntityField {
+    public static abstract class AbstractMutableDBField implements MutableDBField {
         private EntityID location;
 
-        public AbstractMutableEntityField(EntityID location) {
+        public AbstractMutableDBField(EntityID location) {
             this.location = location;
         }
 
@@ -122,7 +122,7 @@ public class ProjectDB {
         }
     }
 
-    public static interface TextField extends EntityField {
+    public static interface TextField extends DBField {
         public MutableTextField mutableCopy();
         public ConstTextField constCopy();
     }
@@ -131,7 +131,7 @@ public class ProjectDB {
      * Stores actual textual data, with (optional) annotations.
      * Uses MXL for the text and annotations.
      */
-    public static class ConstTextField extends AbstractConstEntityField implements TextField {
+    public static class ConstTextField extends AbstractConstDBField implements TextField {
         public ConstTextField(EntityID location) {
             super(location);
         }
@@ -159,7 +159,7 @@ public class ProjectDB {
 
 
 
-    public static class MutableTextField extends AbstractMutableEntityField implements TextField {
+    public static class MutableTextField extends AbstractMutableDBField implements TextField {
 
         public MutableTextField(EntityID location) {
             super(location);
@@ -181,12 +181,12 @@ public class ProjectDB {
         }
     }
 
-    public static interface CollectionField extends EntityField {
+    public static interface CollectionField extends DBField {
         public MutableCollectionField mutableCopy();
         public ConstCollectionField constCopy();
-        EntityField getField(String value);
+        DBField getField(String value);
         //TODO: Should we return more metadata than this?
-        Map<String,? extends EntityField> getFields();
+        Map<String,? extends DBField> getFields();
         public CollectionField getPrototype();
     }
 
@@ -194,12 +194,12 @@ public class ProjectDB {
      * Stores a collection of named and ordered EntityFields.
      * Often has a prototype too (with typing done through the prototype).
      */
-    public static class ConstCollectionField extends AbstractConstEntityField implements CollectionField {
+    public static class ConstCollectionField extends AbstractConstDBField implements CollectionField {
 
         protected final ConstCollectionField prototype;
-        protected final Map<String, ConstEntityField> fields;
+        protected final Map<String, ConstDBField> fields;
 
-        public ConstCollectionField(EntityID location, Map<String, ConstEntityField> fields, ConstCollectionField prototype) {
+        public ConstCollectionField(EntityID location, Map<String, ConstDBField> fields, ConstCollectionField prototype) {
             super(location);
             // Gotta take a defensive copy in case the caller changes it...
             // it doesn't need to be a deep copy since its elements must already be constant.
@@ -212,9 +212,9 @@ public class ProjectDB {
             return new MutableCollectionField(getLocation(), toMutableMap(fields), prototype);
         }
 
-        private Map<String, EntityField> toMutableMap(Map<String, ConstEntityField> fields) {
-            Map<String, EntityField> result = new HashMap<>();
-            for (Map.Entry<String, ConstEntityField> kv : fields.entrySet()) {
+        private Map<String, DBField> toMutableMap(Map<String, ConstDBField> fields) {
+            Map<String, DBField> result = new HashMap<>();
+            for (Map.Entry<String, ConstDBField> kv : fields.entrySet()) {
                 result.put(kv.getKey(), kv.getValue());
             }
             return result;
@@ -228,8 +228,8 @@ public class ProjectDB {
 
 
         @Override
-        public ConstEntityField getField(String value) {
-            ConstEntityField f = fields.get(value);
+        public ConstDBField getField(String value) {
+            ConstDBField f = fields.get(value);
             if(f!=null)
                 return f;
             if(prototype==null)
@@ -238,7 +238,7 @@ public class ProjectDB {
         }
 
         @Override
-        public Map<String, ConstEntityField> getFields() {
+        public Map<String, ConstDBField> getFields() {
             return Collections.unmodifiableMap(fields);
         }
 
@@ -251,7 +251,7 @@ public class ProjectDB {
         public void visit(EntityVisitor entityVisitor) {
             boolean visitChildren = entityVisitor.onCollection(this);
             if(visitChildren) {
-                for( ConstEntityField f : fields.values()) {
+                for( ConstDBField f : fields.values()) {
                     f.visit(entityVisitor);
                 }
             }
@@ -261,22 +261,22 @@ public class ProjectDB {
         public void visit(ConstEntityVisitor entityVisitor) {
             boolean visitChildren = entityVisitor.onCollection(this);
             if(visitChildren) {
-                for( ConstEntityField f : fields.values()) {
+                for( ConstDBField f : fields.values()) {
                     f.visit(entityVisitor);
                 }
             }
         }
     }
 
-    public static class MutableCollectionField extends AbstractMutableEntityField implements CollectionField {
+    public static class MutableCollectionField extends AbstractMutableDBField implements CollectionField {
 
 
         protected final CollectionField prototype;
-        protected final Map<String, EntityField> fields;
+        protected final Map<String, DBField> fields;
 
 
         // Note we keep a copy of the map.
-        public MutableCollectionField(EntityID location, Map<String, EntityField> fields, CollectionField prototype) {
+        public MutableCollectionField(EntityID location, Map<String, DBField> fields, CollectionField prototype) {
             super(location);
             this.fields = new HashMap<>(fields);
             this.prototype = prototype;
@@ -296,28 +296,28 @@ public class ProjectDB {
         public void visit(EntityVisitor entityVisitor) {
             boolean visitChildren = entityVisitor.onCollection(this);
             if(visitChildren) {
-                for( EntityField f : fields.values()) {
+                for( DBField f : fields.values()) {
                     f.visit(entityVisitor);
                 }
             }
         }
 
-        private Map<String, ConstEntityField> toConstMap(Map<String, EntityField> fields) {
-            Map<String,ConstEntityField> result = new HashMap<>();
-            for (Map.Entry<String, EntityField> kv : fields.entrySet()) {
-                final EntityField value = kv.getValue();
+        private Map<String, ConstDBField> toConstMap(Map<String, DBField> fields) {
+            Map<String,ConstDBField> result = new HashMap<>();
+            for (Map.Entry<String, DBField> kv : fields.entrySet()) {
+                final DBField value = kv.getValue();
                 result.put(kv.getKey(), value.constCopy());
             }
             return result;
         }
 
         @Override
-        public EntityField getField(String value) {
+        public DBField getField(String value) {
             return fields.get(value);
         }
 
         @Override
-        public Map<String, EntityField> getFields() {
+        public Map<String, DBField> getFields() {
             return Collections.unmodifiableMap(fields);
 
         }
@@ -328,12 +328,12 @@ public class ProjectDB {
         }
     }
 
-    public interface ReferenceField extends EntityField {
+    public interface ReferenceField extends DBField {
         public MutableReferenceField mutableCopy();
         public ConstReferenceField constCopy();
     }
 
-    public static class ConstReferenceField extends AbstractConstEntityField implements ReferenceField {
+    public static class ConstReferenceField extends AbstractConstDBField implements ReferenceField {
 
         public ConstReferenceField(EntityID location) {
             super(location);
@@ -360,7 +360,7 @@ public class ProjectDB {
         }
     }
 
-    public static class MutableReferenceField extends AbstractMutableEntityField implements ReferenceField {
+    public static class MutableReferenceField extends AbstractMutableDBField implements ReferenceField {
         public MutableReferenceField(EntityID location) {
             super(location);
         }

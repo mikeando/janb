@@ -436,22 +436,22 @@ public class EntitySourceTest {
         }
 
         @Override
-        public boolean tryUpdate(ProjectDB.EntityField entity) {
+        public boolean tryUpdate(ProjectDB.DBField entity) {
             return false;
         }
 
         @Override
-        public boolean trySave(ProjectDB.EntityField entity) {
+        public boolean trySave(ProjectDB.DBField entity) {
             return false;
         }
 
         @Override
-        public ProjectDB.ConstEntityField getEntityById(EntityID id) {
+        public ProjectDB.ConstDBField getEntityById(EntityID id) {
             return null;
         }
 
         @Override
-        public List<ProjectDB.ConstEntityField> getEntities() {
+        public List<ProjectDB.ConstDBField> getEntities() {
             return Collections.EMPTY_LIST;
 
         }
@@ -532,11 +532,11 @@ public class EntitySourceTest {
         EntityMapper mapper = context.mock(EntityMapper.class);
 
 
-        ProjectDB.ConstEntityField e1 = context.mock(ProjectDB.ConstEntityField.class,"e1");
-        ProjectDB.ConstEntityField e2 = context.mock(ProjectDB.ConstEntityField.class,"e2");
-        ArrayList<ProjectDB.ConstEntityField> entitiesInA = new ArrayList<>();
+        ProjectDB.ConstDBField e1 = context.mock(ProjectDB.ConstDBField.class,"e1");
+        ProjectDB.ConstDBField e2 = context.mock(ProjectDB.ConstDBField.class,"e2");
+        ArrayList<ProjectDB.ConstDBField> entitiesInA = new ArrayList<>();
         entitiesInA.add(e1);
-        ArrayList<ProjectDB.ConstEntityField> entitiesInB = new ArrayList<>();
+        ArrayList<ProjectDB.ConstDBField> entitiesInB = new ArrayList<>();
         entitiesInB.add(e2);
 
         Entity ee1 = new Entity();

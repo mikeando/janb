@@ -51,7 +51,7 @@ public class EntitySource implements IEntitySource {
 
     //TODO: This should throw something saner.
     @Deprecated
-    public void saveEntity(ProjectDB.EntityField entity) {
+    public void saveEntity(ProjectDB.DBField entity) {
         // Look for a writable version in each project.
         for(ANBProject p : projects) {
             if(p.tryUpdate(entity))

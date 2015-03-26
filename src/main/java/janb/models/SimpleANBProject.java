@@ -24,12 +24,12 @@ public class SimpleANBProject implements ANBProject {
         }
 
         final List<ANBFile> files = path.getAllFiles();
-        Map<String, ProjectDB.ConstEntityField> fields = new HashMap<>();
+        Map<String, ProjectDB.ConstDBField> fields = new HashMap<>();
         for(ANBFile file : files) {
             if(!file.isDirectory())
                 continue;
             String fileName  = file.getName();
-            ProjectDB.AbstractConstEntityField child = loadEntity(file, entityID.child(fileName));
+            ProjectDB.AbstractConstDBField child = loadEntity(file, entityID.child(fileName));
             if(child!=null) {
                 fields.put(fileName, child);
             }
@@ -41,7 +41,7 @@ public class SimpleANBProject implements ANBProject {
     }
 
     //TODO: Throwing RuntimeExceptions from inside this is not appropriate.
-    private ProjectDB.AbstractConstEntityField loadEntity(ANBFile path, EntityID id) throws IOException {
+    private ProjectDB.AbstractConstDBField loadEntity(ANBFile path, EntityID id) throws IOException {
         ANBFile typeFile = path.child("_type");
         if(typeFile!=null && typeFile.isDirectory())
             throw new RuntimeException("_type must not be a directory");
@@ -61,7 +61,7 @@ public class SimpleANBProject implements ANBProject {
         throw new RuntimeException("Unknown type:"+type);
     }
 
-    private ProjectDB.AbstractConstEntityField loadRefEntity(ANBFile path, EntityID id) {
+    private ProjectDB.AbstractConstDBField loadRefEntity(ANBFile path, EntityID id) {
         return null;
     }
 
@@ -94,22 +94,22 @@ public class SimpleANBProject implements ANBProject {
     }
 
     @Override
-    public boolean tryUpdate(ProjectDB.EntityField entity) {
+    public boolean tryUpdate(ProjectDB.DBField entity) {
         throw new RuntimeException("NYI");
     }
 
     @Override
-    public boolean trySave(ProjectDB.EntityField entity) {
+    public boolean trySave(ProjectDB.DBField entity) {
         throw new RuntimeException("NYI");
     }
 
     @Override
-    public ProjectDB.ConstEntityField getEntityById(EntityID id) {
+    public ProjectDB.ConstDBField getEntityById(EntityID id) {
         throw new RuntimeException("NYI");
     }
 
     @Override
-    public List<ProjectDB.ConstEntityField> getEntities() {
+    public List<ProjectDB.ConstDBField> getEntities() {
         return Collections.EMPTY_LIST;
     }
 }
