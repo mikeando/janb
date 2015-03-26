@@ -11,10 +11,11 @@ import java.util.List;
  */
 public class EventListModel extends EntityListModel<EventModel> {
 
+    //TODO: Need to hook this up to listen to the entitySource - otherwise add / remove etc wont be detected.
     EventListModel(IEntitySource entitySource) {
         super(entitySource, new IEntityToModelConverter() {
             @Override
-            public EventModel toModel(IEntityDB.ICharacterBlock entity) {
+            public EventModel toModel(Entity entity) {
                 return new EventModel(entity.id().shortName());
             }
         }, "events");
@@ -31,7 +32,13 @@ public class EventListModel extends EntityListModel<EventModel> {
 
     @Override
     public List<Pair<String, Action>> getContextActions() {
-        return new ArrayList<>();
+        final ArrayList<Pair<String, Action>> actions = new ArrayList<>();
+        actions.add( new Pair<>("create", (Action) controller -> {
+            final EntityID id = entityType.id().child("donkey");
+            final Entity entity = new Entity();
+            entitySource.saveEntity(entity);
+        }));
+        return actions;
     }
 
 

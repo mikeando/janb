@@ -7,13 +7,15 @@ import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * Created by michaelanderson on 27/02/2015.
@@ -22,6 +24,130 @@ public class EntitySourceTest {
 
     @Rule public JUnitRuleMockery context = new JUnitRuleMockery();
 
+    public static abstract class DummyANBFileBase implements ANBFile {
+        protected final ANBFileSystem fs;
+        protected final List<String> absolute_path;
+        protected final boolean isWritable;
+
+        // Hide this away a little?
+        public byte[] content = null;
+
+        public DummyANBFileBase(ANBFileSystem fs, List<String> absolute_path, boolean isWritable) {
+            this.fs = fs;
+            this.absolute_path = absolute_path;
+            this.isWritable = isWritable;
+        }
+
+        @Override
+        public List<String> relative_path(ANBFile root) {
+            final DummyANBFileBase rootAsDummy = (DummyANBFileBase) root;
+            if(rootAsDummy.absolute_path.size() > absolute_path.size())
+                throw new RuntimeException("Not a child path!");
+            ArrayList<String> result = new ArrayList<>();
+            for(int i=0; i<absolute_path.size(); ++i) {
+                if(i<rootAsDummy.absolute_path.size()) {
+                    if(rootAsDummy.absolute_path.get(i).equals(absolute_path.get(i)))
+                        continue;
+                    throw new RuntimeException("Not a child path!");
+                } else {
+                    result.add(absolute_path.get(i));
+                }
+            }
+
+            return result;
+        }
+
+        @Override
+        public ANBFileSystem getFS() {
+            return fs;
+        }
+
+        @Override
+        public boolean isWritable() {
+            return isWritable;
+        }
+
+        @Override
+        public String pathAsString() {
+            return String.join("/",absolute_path);
+        }
+
+        @Override
+        public String getName() {
+            return absolute_path.get(absolute_path.size()-1);
+        }
+
+        @Override
+        public byte[] readContents() throws IOException {
+            return content;
+        }
+    }
+
+    public static class DummyANBFileDirectory extends DummyANBFileBase {
+
+        private final Map<String,ANBFile> children;
+
+        public DummyANBFileDirectory(ANBFileSystem fs, List<String> absolute_path, boolean isWritable, Map<String, ANBFile> children) {
+            super(fs, absolute_path, isWritable);
+            this.children = children;
+        }
+
+        public DummyANBFileDirectory(ANBFileSystem fs, List<String> absolute_path) {
+            this(fs, absolute_path, true, new HashMap<String, ANBFile>());
+        }
+
+        @Override
+        public boolean isDirectory() {
+            return true;
+        }
+
+        @Override
+        public ANBFile child(String name) {
+            return children.get(name);
+        }
+
+
+
+        @Override
+        public List<ANBFile> getAllFiles() {
+            return Collections.unmodifiableList(new ArrayList<>(children.values()));
+        }
+    }
+
+    public static class DummyANBFileNormal extends DummyANBFileBase {
+
+        public DummyANBFileNormal(ANBFileSystem fs, List<String> absolute_path, boolean isWritable) {
+            super(fs, absolute_path, isWritable);
+        }
+
+        @Override
+        public boolean isDirectory() {
+            return false;
+        }
+
+        @Override
+        public ANBFile child(String name) {
+            return null;
+        }
+
+        @Override
+        public List<ANBFile> getAllFiles() {
+            return Collections.EMPTY_LIST;
+        }
+    }
+
+    private static class DummyFileSystemDetails {
+        private ANBFileSystem fileSystem;
+
+        private final JUnitRuleMockery context;
+
+        private DummyFileSystemDetails(JUnitRuleMockery context) {
+            this.context = context;
+            fileSystem = context.mock(ANBFileSystem.class);
+        }
+    }
+
+    @Deprecated
     private static class SimpleFileSystemDetails {
         private ANBFileSystem fileSystem;
         private Map<String, ANBFile> files = new HashMap<>();
@@ -52,11 +178,17 @@ public class EntitySourceTest {
             childrenOfFile.put(file, children);
 
             context.checking( new Expectations(){{
-                allowing(fileSystem).getAllFiles(file);
+                allowing(file).getAllFiles();
                 will( returnValue(children));
 
                 allowing(file).isDirectory();
                 will(returnValue(true));
+
+                allowing(file).child("_type");
+                will(returnValue(null));
+
+                allowing(file).getName();
+                will(returnValue(name));
 
             }});
 
@@ -100,7 +232,7 @@ public class EntitySourceTest {
 
     }
 
-
+    @Deprecated
     private SimpleFileSystemDetails setupEmptyFileSystem(String rootName) {
         SimpleFileSystemDetails fs = new SimpleFileSystemDetails(context);
         ANBFile root = fs.createDirectory("root");
@@ -108,6 +240,7 @@ public class EntitySourceTest {
         return fs;
     }
 
+    @Deprecated
     private SimpleFileSystemDetails setupOneDeepFS(String rootName) {
 
         SimpleFileSystemDetails fs = new SimpleFileSystemDetails(context);
@@ -129,6 +262,69 @@ public class EntitySourceTest {
             }});
 
             return fs;
+    }
+
+    private DummyFileSystemDetails setupOneDeepFS_newScheme(String rootName) {
+
+        DummyFileSystemDetails fs = new DummyFileSystemDetails(context);
+
+        DummyANBFileDirectory root = new DummyANBFileDirectory(fs.fileSystem, asList("root") );
+
+        DummyANBFileDirectory a = new DummyANBFileDirectory(fs.fileSystem, asList("root","a"));
+        root.children.put("a", a);
+
+        DummyANBFileDirectory b = new DummyANBFileDirectory(fs.fileSystem, asList("root","b"));
+        root.children.put("b",b);
+
+        DummyANBFileNormal a_type = new DummyANBFileNormal(fs.fileSystem, asList("root","a","_type"), true);
+        a_type.content = new String("collection").getBytes(StandardCharsets.UTF_8);
+        b.children.put("_type",a_type);
+
+        DummyANBFileNormal b_type = new DummyANBFileNormal(fs.fileSystem, asList("root", "b", "_type"), true);
+        b.children.put("_type",b_type);
+        b_type.content = new String("collection").getBytes(StandardCharsets.UTF_8);
+
+
+
+        context.checking( new Expectations(){{
+            allowing(fs.fileSystem).getFileForString("/nowhere/dummyData");
+            will(returnValue(root));
+        }});
+
+        return fs;
+    }
+
+    private DummyFileSystemDetails setupTwoDeepFS_newScheme(String s) {
+        DummyFileSystemDetails fs = new DummyFileSystemDetails(context);
+        DummyANBFileDirectory root = new DummyANBFileDirectory(fs.fileSystem, asList("root") );
+
+        context.checking( new Expectations(){{
+            allowing(fs.fileSystem).getFileForString(s);
+            will(returnValue(root));
+        }});
+
+        DummyANBFileDirectory a = new DummyANBFileDirectory(fs.fileSystem, asList("root","a"));
+        root.children.put("a", a);
+
+        DummyANBFileDirectory b = new DummyANBFileDirectory(fs.fileSystem, asList("root","a", "b"));
+        a.children.put("b", b);
+
+
+        return fs;
+    }
+
+    private DummyFileSystemDetails setupEmptyFS_newScheme(String rootName) {
+
+        DummyFileSystemDetails fs = new DummyFileSystemDetails(context);
+
+        DummyANBFileDirectory root = new DummyANBFileDirectory(fs.fileSystem, asList("root") );
+
+        context.checking( new Expectations(){{
+            allowing(fs.fileSystem).getFileForString("/nowhere/dummyData");
+            will(returnValue(root));
+        }});
+
+        return fs;
     }
 
     private SimpleFileSystemDetails setupDefaultFS(String rootName) {
@@ -232,42 +428,180 @@ public class EntitySourceTest {
         return fs;
     }
 
+    public static class DummyProject implements ANBProject {
+
+        public DummyProject(ANBFileSystem fileSystem, String path) {
+
+        }
+
+        @Override
+        public boolean tryUpdate(Entity.EntityField entity) {
+            return false;
+        }
+
+        @Override
+        public boolean trySave(Entity.EntityField entity) {
+            return false;
+        }
+
+        @Override
+        public Entity.ConstEntityField getEntityById(EntityID id) {
+            return null;
+        }
+
+        @Override
+        public List<Entity.ConstEntityField> getEntities() {
+            return Collections.EMPTY_LIST;
+
+        }
+    }
+
 
     @Test public void testCanGetEntityTypesWhenEmpty() {
 
         // Setup
         SimpleFileSystemDetails fs = setupEmptyFileSystem("/nowhere/dummyData");
-        EntitySource entitySourceImpl = new EntitySource(fs.fileSystem);
+        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySourceImpl = new EntitySource();
 
         // Run
-        entitySourceImpl.addRoot("/nowhere/dummyData");
+        entitySourceImpl.addProject(project);
         IEntitySource entitySource =  entitySourceImpl;
-        final List<IEntitySource.EntityType> entityTypes = entitySource.getEntityTypes();
+        final List<EntityType> entityTypes = entitySource.getEntityTypes();
 
         // Check
         assertThat(entityTypes, is(notNullValue()));
         assertThat(entityTypes.size(), is(1));
     }
 
+    /**
+     * In the new scheme an EntityType is just an Entity of type CollectionEntity
+     * in particular any collection tagged with type = collection:!category
+     *
+     * !category is one of the few builtin collection types.
+     */
+    @Test public void testCanGetEntityCategoriesWhenEmpty_newScheme() {
+
+        // Setup
+        DummyFileSystemDetails fs = setupEmptyFS_newScheme("/nowhere/dummyData");
+        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+
+        EntitySource entitySourceImpl = new EntitySource();
+
+        // Run
+        entitySourceImpl.addProject(project);
+        IEntitySource entitySource =  entitySourceImpl;
+
+        final List<EntityType> entityTypes = entitySource.getEntityTypes();
+
+        // Check
+        assertThat(entityTypes, is(notNullValue()));
+        assertThat(entityTypes.size(), is(1));
+
+        final EntityType root = entityTypes.get(0);
+        assertThat(root.id(), is(equalTo(EntityID.fromComponents())));
+        assertThat(root, is(instanceOf(Entity.ConstCollectionField.class)));
+    }
+
     @Test public void testCanGetEntityTypesOneLevelDeep() {
 
         // Setup
         SimpleFileSystemDetails fs = setupOneDeepFS("/nowhere/dummyData");
-        EntitySource entitySourceImpl = new EntitySource(fs.fileSystem);
+        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySourceImpl = new EntitySource();
 
         // Run
-        entitySourceImpl.addRoot("/nowhere/dummyData");
+        entitySourceImpl.addProject(project);
         IEntitySource entitySource =  entitySourceImpl;
-        final List<IEntitySource.EntityType> entityTypes = entitySource.getEntityTypes();
+        final List<EntityType> entityTypes = entitySource.getEntityTypes();
 
         // Check
         assertThat(entityTypes, is(notNullValue()));
         assertThat(entityTypes.size(), is(3));
 
-        assertThat(entityTypes.get(0).components(), is(equalTo(asList())));
-        assertThat(entityTypes.get(1).components(), is(equalTo(asList("a_type"))));
-        assertThat(entityTypes.get(2).components(), is(equalTo(asList("b_type"))));
+        assertThat(entityTypes.get(0).id().components(), is(equalTo(asList())));
+        assertThat(entityTypes.get(1).id().components(), is(equalTo(asList("a_type"))));
+        assertThat(entityTypes.get(2).id().components(), is(equalTo(asList("b_type"))));
 
+    }
+
+    @Test public void testEntitySourceAddsEntitiesFromProjects() {
+        ANBProject projectA = context.mock(ANBProject.class,"projectA");
+        ANBProject projectB = context.mock(ANBProject.class,"projectB");
+        EntityMapper mapper = context.mock(EntityMapper.class);
+
+
+        Entity.ConstEntityField e1 = context.mock(Entity.ConstEntityField.class,"e1");
+        Entity.ConstEntityField e2 = context.mock(Entity.ConstEntityField.class,"e2");
+        ArrayList<Entity.ConstEntityField> entitiesInA = new ArrayList<>();
+        entitiesInA.add(e1);
+        ArrayList<Entity.ConstEntityField> entitiesInB = new ArrayList<>();
+        entitiesInB.add(e2);
+
+        Entity ee1 = new Entity();
+        Entity ee2 = new Entity();
+
+        EntitySource source = new EntitySource();
+        source.setEntityMapper(mapper);
+
+        context.checking( new Expectations(){{
+                oneOf(projectA).getEntities();
+                will(returnValue(entitiesInA));
+
+                oneOf(projectB).getEntities();
+                will(returnValue(entitiesInB));
+
+                oneOf(mapper).mapToEntity(e1);
+                will(returnValue(ee1));
+
+                oneOf(mapper).mapToEntity(e2);
+                will(returnValue(ee2));
+            }});
+
+        source.addProject(projectA);
+        source.addProject(projectB);
+
+        context.assertIsSatisfied();
+
+        assertThat(new HashSet<>(source.getAllEntitiesOfType(null)), is(equalTo(new HashSet<>(asList(ee1, ee2)))));
+    }
+
+    @Test public void testEntitySourceGetsDefaultMapper() {
+        EntitySource source = new EntitySource();
+        assertThat(source.getEntityMapper(), is(instanceOf(DefaultEntityMapper.class)));
+    }
+
+    @Test public void testDefaultEntityMapperWorks() {
+        fail("Not yet implemented");
+    }
+
+    @Test public void testCanGetEntityCategoriesOneLevelDeep_newScheme() {
+
+        // Setup
+        DummyFileSystemDetails fs = setupOneDeepFS_newScheme("/nowhere/dummyData");
+        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySourceImpl = new EntitySource();
+
+        // Run
+        entitySourceImpl.addProject(project);
+        IEntitySource entitySource =  entitySourceImpl;
+        final List<EntityType> entityTypes = entitySource.getEntityTypes();
+
+        // Check
+        assertThat(entityTypes, is(notNullValue()));
+        assertThat(entityTypes.size(), is(3));
+
+        final EntityType root = entityTypes.get(0);
+        final EntityType entity1 = entityTypes.get(1);
+        final EntityType entity2 = entityTypes.get(2);
+
+        assertThat(root.id(), is(equalTo(EntityID.fromComponents())));
+        assertThat(entity1.id(), is(equalTo(EntityID.fromComponents("a"))));
+        assertThat(entity2.id(), is(equalTo(EntityID.fromComponents("b"))));
+
+        assertThat(root, is(instanceOf(Entity.ConstCollectionField.class)));
+        assertThat(entity1, is(instanceOf(Entity.ConstCollectionField.class)));
+        assertThat(entity2, is(instanceOf(Entity.ConstCollectionField.class)));
     }
 
     @Test public void testCanGetEntityTypesTwoLevelsDeep() {
@@ -278,66 +612,102 @@ public class EntitySourceTest {
         ANBFile fileA = context.mock(ANBFile.class, "a");
         ANBFile fileAB = context.mock(ANBFile.class, "a.b");
 
-        EntitySource entitySourceImpl = new EntitySource(fileSystem);
-
         // Expectations
         context.checking( new Expectations(){{
             oneOf(fileSystem).getFileForString("/nowhere/dummyData");
             will( returnValue(rootFile));
-            oneOf(fileSystem).getAllFiles(rootFile);
+            allowing(rootFile).getAllFiles();
             will( returnValue(asList(fileA)));
+            allowing(rootFile).isDirectory();
+            will(returnValue(true));
+            allowing(rootFile).child("_type");
+            will(returnValue(null));
 
-            oneOf(fileSystem).getAllFiles(fileA);
+
+            allowing(fileA).getAllFiles();
             will( returnValue(asList(fileAB)));
 
-            oneOf(fileSystem).getAllFiles(fileAB);
+            allowing(fileAB).getAllFiles();
             will( returnValue(asList()));
 
-            oneOf(fileA).isDirectory(); will(returnValue(true));
+            allowing(fileA).isDirectory(); will(returnValue(true));
             allowing(fileA).relative_path(rootFile) ; will(returnValue(asList("a")));
-            oneOf(fileAB).isDirectory(); will(returnValue(true));
+            allowing(fileA).getName(); will(returnValue("a"));
+            allowing(fileA).child("_type"); will(returnValue(null));
+
+            allowing(fileAB).isDirectory(); will(returnValue(true));
             allowing(fileAB).relative_path(rootFile) ; will(returnValue(asList("a", "b")));
+            allowing(fileAB).getName(); will(returnValue("b"));
+            allowing(fileAB).child("_type"); will(returnValue(null));
         }});
 
+
+
         // Run
-        entitySourceImpl.addRoot("/nowhere/dummyData");
+        DummyProject project = new DummyProject(fileSystem, "/nowhere/dummyData");
+        EntitySource entitySourceImpl = new EntitySource();
+        entitySourceImpl.addProject(project);
+
+
+
+        // Run
         IEntitySource entitySource =  entitySourceImpl;
-        final List<IEntitySource.EntityType> entityTypes = entitySource.getEntityTypes();
+        final List<EntityType> entityTypes = entitySource.getEntityTypes();
 
         // Check
         assertThat(entityTypes, is(notNullValue()));
         assertThat(entityTypes.size(), is(3));
 
-        assertThat(entityTypes.get(0).components(), is(equalTo(asList())));
-        assertThat(entityTypes.get(1).components(), is(equalTo(asList("a"))));
-        assertThat(entityTypes.get(2).components(), is(equalTo(asList("a", "b"))));
+        assertThat(entityTypes.get(0).id().components(), is(equalTo(asList())));
+        assertThat(entityTypes.get(1).id().components(), is(equalTo(asList("a"))));
+        assertThat(entityTypes.get(2).id().components(), is(equalTo(asList("a", "b"))));
+    }
+
+    @Test public void testCanGetEntityTypesTwoLevelsDeep_newScheme() {
+
+        // Setup
+        DummyFileSystemDetails fs = setupTwoDeepFS_newScheme("/nowhere/dummyData");
+
+        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySourceImpl = new EntitySource();
+
+        // Run
+        entitySourceImpl.addProject(project);
+        IEntitySource entitySource =  entitySourceImpl;
+        final List<EntityType> entityTypes = entitySource.getEntityTypes();
+
+        // Check
+        assertThat(entityTypes, is(notNullValue()));
+        assertThat(entityTypes.size(), is(3));
+
+        assertThat(entityTypes.get(0).id(), is(EntityID.fromComponents()));
+        assertThat(entityTypes.get(1).id(), is(EntityID.fromComponents("a")));
+        assertThat(entityTypes.get(2).id(), is(equalTo(EntityID.fromComponents("a", "b"))));
 
     }
+
+
 
     /**
      * Same entity type referfenced from two different roots.
      */
     @Test public void testThatRepeatedEntityTypesDoNotGetAddedMultipleTimes() {
         final SimpleFileSystemDetails defaultFS = setupFSWithTwoRootsDupeName("/nowhere/dummyData", "/donkey/food");
-        EntitySource entitySource = new EntitySource(defaultFS.fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
-        entitySource.addRoot("/donkey/food");
+        DummyProject projectA = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        DummyProject projectB = new DummyProject(defaultFS.fileSystem, "/donkey/food");
 
-        IEntityDB.EntityID id= IEntityDB.EntityID.fromComponents("character", "duped_entity_type");
-        final IEntitySource.EntityType entityType = entitySource.getEntityTypeByID(id);
+
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(projectA);
+        entitySource.addProject(projectB);
+
+        EntityID id= EntityID.fromComponents("character", "duped_entity_type");
+        final EntityType entityType = entitySource.getEntityTypeByID(id);
         assertThat(entityType, is(notNullValue()));
-        assertThat(entityType.shortName(), is(equalTo("duped_entity_type")));
-        assertThat(entityType.components(), is(equalTo(asList("character", "duped_entity_type"))));
+        assertThat(entityType.id().shortName(), is(equalTo("duped_entity_type")));
+        assertThat(entityType.id().components(), is(equalTo(asList("character", "duped_entity_type"))));
 
-        final List<ANBFile> sourceLocations = entityType.getSourceLocations();
-        assertThat(sourceLocations,is(notNullValue()));
-        List<String> paths = sourceLocations.stream()
-                .map(ANBFile::pathAsString)
-                .collect(Collectors.toList());
-        Collections.sort(paths);
-        assertThat(paths, is(equalTo(asList(
-                "/donkey/food/character/duped_entity_type",
-                "/nowhere/dummyData/character/duped_entity_type"))));
+        fail("NYI - removed stuff from here that hasn't been replaced - not sure what should be here now...");
     }
 
 
@@ -346,30 +716,31 @@ public class EntitySourceTest {
     // determine where they write to.
     @Test
     public void testThatEntityTypesHangOnToTheirOriginalFiles() throws Exception {
-        ANBFile file = context.mock(ANBFile.class);
+        ANBProject project = context.mock(ANBProject.class);
 
-        IEntitySource.EntityType type = new IEntitySource.EntityType(IEntityDB.EntityID.fromComponents("hello", "world"));
-        type.addPath(file);
+        EntityType type = new EntityType(EntityID.fromComponents("hello", "world"));
+        type.addSourceProject(project);
 
-        final List<ANBFile> sourceLocations = type.getSourceLocations();
+        final List<ANBProject> sourceLocations = type.getProjects();
         assertThat(sourceLocations, is(notNullValue()));
         assertThat(sourceLocations.size(), is(1));
-        assertThat(sourceLocations.get(0), is(file));
+        assertThat(sourceLocations.get(0), is(project));
     }
 
     @Test
     public void testGetEntityByID() throws Exception {
         final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        EntitySource entitySource = new EntitySource(defaultFS.fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
-        IEntityDB.EntityID idA = (new IEntityDB.EntityID()).child("character").child("an_entity");
-        IEntityDB.EntityID idB = (new IEntityDB.EntityID()).child("character").child("another_entity");
-        IEntityDB.EntityID idC = (new IEntityDB.EntityID()).child("character").child("no_such_entity");
+        EntityID idA = (new EntityID()).child("character").child("an_entity");
+        EntityID idB = (new EntityID()).child("character").child("another_entity");
+        EntityID idC = (new EntityID()).child("character").child("no_such_entity");
 
-        final IEntityDB.ICharacterBlock entityA = entitySource.getEntityById(idA);
-        final IEntityDB.ICharacterBlock entityB = entitySource.getEntityById(idB);
-        final IEntityDB.ICharacterBlock entityC = entitySource.getEntityById(idC);
+        final Entity entityA = entitySource.getEntityById(idA);
+        final Entity entityB = entitySource.getEntityById(idB);
+        final Entity entityC = entitySource.getEntityById(idC);
 
         assertThat(entityC, is(nullValue()));
         assertThat(entityA, is(notNullValue()));
@@ -381,81 +752,92 @@ public class EntitySourceTest {
     @Test
     public void testGetEntityTypeByID() throws Exception {
         final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyData");
-        EntitySource entitySource = new EntitySource(defaultFS.fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
-        IEntityDB.EntityID idA = (new IEntityDB.EntityID()).child("character").child("duped_entity_type");
-        IEntityDB.EntityID idB = (new IEntityDB.EntityID()).child("location").child("duped_entity_type");
+        EntityID idA = (new EntityID()).child("character").child("duped_entity_type");
+        EntityID idB = (new EntityID()).child("location").child("duped_entity_type");
 
 
-        final IEntitySource.EntityType dupedEntityA = entitySource.getEntityTypeByID(idA);
-        final IEntitySource.EntityType dupedEntityB = entitySource.getEntityTypeByID(idB);
+        final EntityType dupedEntityA = entitySource.getEntityTypeByID(idA);
+        final EntityType dupedEntityB = entitySource.getEntityTypeByID(idB);
 
         assertThat(dupedEntityA, is(notNullValue()));
         assertThat(dupedEntityB, is(notNullValue()));
 
-        assertThat(dupedEntityA.fullName(), is(equalTo("character.duped_entity_type")));
-        assertThat(dupedEntityB.fullName(), is(equalTo("location.duped_entity_type")));
+        assertThat(dupedEntityA.id().asString(), is(equalTo("character.duped_entity_type")));
+        assertThat(dupedEntityB.id().asString(), is(equalTo("location.duped_entity_type")));
     }
 
     @Test
     public void testGetEntityTypeByName() {
         final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        EntitySource entitySource = new EntitySource(defaultFS.fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
-        final IEntitySource.EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
+
+        final EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
         assertThat(characterEntityType, is(notNullValue()));
 
-        assertThat(characterEntityType.fullName(),is(equalTo("character")));
-        assertThat(characterEntityType.components(), is(equalTo(asList("character"))));
+        assertThat(characterEntityType.id().asString(),is(equalTo("character")));
+        assertThat(characterEntityType.id().components(), is(equalTo(asList("character"))));
     }
 
     @Test
     public void testGetEntityTypeByName_noSuchEntityType() {
         final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        EntitySource entitySource = new EntitySource(defaultFS.fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
-        final IEntitySource.EntityType noSuchEntity = entitySource.getEntityTypeByShortName("no_such_entity");
+
+        final EntityType noSuchEntity = entitySource.getEntityTypeByShortName("no_such_entity");
         assertThat(noSuchEntity, is(nullValue()));
     }
 
     @Test
     public void testGetEntityTypeByName_multipleEntitiesWithSameName() {
-        final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyData");
-        EntitySource entitySource = new EntitySource(defaultFS.fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
+final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyData");
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
-        final IEntitySource.EntityType dupedEntity = entitySource.getEntityTypeByShortName("duped_entity_type");
+
+        final EntityType dupedEntity = entitySource.getEntityTypeByShortName("duped_entity_type");
         assertThat(dupedEntity, is(notNullValue()));
-        assertThat(dupedEntity.shortName(), is(equalTo("duped_entity_type")));
+        assertThat(dupedEntity.id().shortName(), is(equalTo("duped_entity_type")));
 
         List<String> opt1 = asList("character", "duped_entity_type");
         List<String> opt2 = asList("location", "duped_entity_type");
-        assertThat(dupedEntity.components(), anyOf(is(equalTo(opt1)), is(equalTo(opt2))));
+        assertThat(dupedEntity.id().components(), anyOf(is(equalTo(opt1)), is(equalTo(opt2))));
     }
 
     @Test
     public void testGetEntityTypeByName_onlyReturnsDirectories() {
         final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        EntitySource entitySource = new EntitySource(defaultFS.fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
-        final IEntitySource.EntityType noSuchEntity = entitySource.getEntityTypeByShortName("a_character");
+
+        final EntityType noSuchEntity = entitySource.getEntityTypeByShortName("a_character");
         assertThat(noSuchEntity, is(nullValue()));
     }
 
     @Test
     public void testGetEntityByName_onlyReturnsFiles() {
-        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        EntitySource entitySource = new EntitySource(defaultFS.fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
+         final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
-        final IEntityDB.ICharacterBlock aCharacter = entitySource.getEntityByName("an_entity");
+
+        final Entity aCharacter = entitySource.getEntityByName("an_entity");
         assertThat(aCharacter, is(notNullValue()));
 
-        final IEntityDB.ICharacterBlock character = entitySource.getEntityByName("character");
+        final Entity character = entitySource.getEntityByName("character");
         assertThat(character, is(nullValue()));
     }
 
@@ -465,13 +847,13 @@ public class EntitySourceTest {
     public void testCreateNewEntity() throws Exception {
 
         final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
-        ANBFileSystem fileSystem = defaultFS.fileSystem;
-        EntitySource entitySource = new EntitySource(fileSystem);
-        entitySource.addRoot("/nowhere/dummyData");
 
         //TODO: Each of these bits needs its own tests.
-        final IEntitySource.EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
+        final EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
         assertThat(characterEntityType, is(notNullValue()));
 
         ANBFile some_character = defaultFS.createFile("some_character");
@@ -481,16 +863,60 @@ public class EntitySourceTest {
             oneOf(defaultFS.file("character")).child("some_character");
             will(returnValue(some_character));
             oneOf(some_character).getFS();
-            will(returnValue(fileSystem));
+            will(returnValue(defaultFS.fileSystem));
         }});
 
-        IEntityDB.ICharacterBlock entity = entitySource.createNewEntityOfType(characterEntityType,"some_character");
-        assertThat(entity, is(notNullValue()));
+        fail("NYI - only partially implemented");
+//        Entity entity = entitySource.createNewEntityOfType(characterEntityType,"some_character");
+//        assertThat(entity, is(notNullValue()));
+//
+//        context.checking(new Expectations() {{
+//            oneOf(defaultFS.fileSystem).writeFileContents(entity.getFile(), "This is a test".getBytes());
+//            }});
+//
+//        entity.saveContents("This is a test".getBytes());
+    }
+    
+    @Test
+    public void testThatCreatingAnEntityGeneratesAnEvent() throws Exception {
+
+        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
+
+        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
+
+        EntitySourceListener listener = context.mock(EntitySourceListener.class);
+        entitySource.addListener(listener);
+
+        //TODO: Each of these bits needs its own tests.
+        final EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
+        assertThat(characterEntityType, is(notNullValue()));
+
+        ANBFile some_character = defaultFS.createFile("some_character");
+        context.checking(new Expectations() {{
+            allowing(defaultFS.file("character")).isWritable();
+            will(returnValue(true));
+            allowing(defaultFS.file("character")).child("some_character");
+            will(returnValue(some_character));
+            allowing(some_character).getFS();
+            will(returnValue(defaultFS.fileSystem));
+        }});
 
         context.checking(new Expectations() {{
-            oneOf(fileSystem).writeFileContents(entity.getFile(), "This is a test".getBytes());
-            }});
+            oneOf(listener).onAddEntity(with(aNonNull(Entity.class)));
+        }});
 
-        entity.saveContents("This is a test".getBytes());
+//        Entity entity = entitySource.createNewEntityOfType(characterEntityType,"some_character");
+//        assertThat(entity, is(notNullValue()));
+
+        fail("NYI - only partially implemented");
+
+
+    }
+
+    @Test
+    public void testAddingAnEntityTypeGeneratesAnEvent() throws Exception {
+        fail("NYI");
     }
 }

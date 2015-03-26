@@ -3,6 +3,7 @@ package janb;
 import janb.controllers.Controller;
 import janb.models.EntitySource;
 import janb.models.Model;
+import janb.models.SimpleANBProject;
 import janb.util.ANBFile;
 import janb.util.ANBFileSystem;
 import javafx.application.Application;
@@ -46,6 +47,16 @@ public class Main extends Application {
         }
 
         @Override
+        public List<ANBFile> getAllFiles() {
+            File[] files = p.toFile().listFiles();
+            List<ANBFile> result = new ArrayList<>();
+            for(File f:files) {
+                result.add(new SimpleANBFile(f.toPath(),fs));
+            }
+            return result;
+        }
+
+        @Override
         public ANBFileSystem getFS() {
             return fs;
         }
@@ -69,30 +80,25 @@ public class Main extends Application {
         public String pathAsString() {
             return p.toString();
         }
+
+        @Override
+        public String getName() {
+            if(p==null || p.getNameCount()==0)
+                return "";
+            return p.getName(p.getNameCount()-1).toString();
+        }
+
+        @Override
+        public byte[] readContents() throws IOException {
+            return Files.readAllBytes(p);
+        }
     }
 
     public static class SimpleANBFileSystem implements ANBFileSystem {
 
         @Override
-        public List<ANBFile> getAllFiles(ANBFile file) {
-            SimpleANBFile sanbfile = (SimpleANBFile)file;
-            File[] files = sanbfile.p.toFile().listFiles();
-            List<ANBFile> result = new ArrayList<>();
-            for(File f:files) {
-                result.add(new SimpleANBFile(f.toPath(),this));
-            }
-            return result;
-        }
-
-        @Override
         public ANBFile getFileForString(String s) {
             return new SimpleANBFile(Paths.get(s), this);
-        }
-
-        @Override
-        public byte[] readFileContents(ANBFile file) throws IOException {
-            SimpleANBFile sanbfile = (SimpleANBFile)file;
-            return Files.readAllBytes(sanbfile.p);
         }
 
         @Override
@@ -127,8 +133,11 @@ public class Main extends Application {
         final File sourceLocation = new File("/Users/michaelanderson/JANBData/entities");
 
 
-        EntitySource entitySource = new EntitySource(fs);
-        entitySource.addRoot(sourceLocation.getAbsolutePath());
+        SimpleANBProject project = new SimpleANBProject();
+        //sourceLocation.getAbsolutePath();
+
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
 
 
         Model model = new Model(entitySource);

@@ -1,9 +1,5 @@
 package janb.models;
 
-import janb.util.ANBFile;
-import janb.util.ANBFileSystem;
-
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -11,16 +7,14 @@ import java.util.stream.Collectors;
  * Created by michaelanderson on 27/02/2015.
  */
 public class EntitySource implements IEntitySource {
-    private final ANBFileSystem fileSystem;
 
+    private final List<ANBProject> projects = new ArrayList<>();
     private final List<EntityType> types = new ArrayList<>();
-    private final Map<IEntityDB.EntityID, EntityType> typesMap = new HashMap<>();
-    private final List<IEntityDB.ICharacterBlock> entities = new ArrayList<>();
+    private final Map<EntityID, EntityType> typesMap = new HashMap<>();
+    private final List<Entity> entities = new ArrayList<>();
+    private List<EntitySourceListener> listeners = new ArrayList<>();
+    private EntityMapper mapper = new DefaultEntityMapper();
 
-    public EntitySource(ANBFileSystem fileSystem) {
-
-        this.fileSystem = fileSystem;
-    }
 
     @Override
     public List<EntityType> getEntityTypes() {
@@ -29,49 +23,16 @@ public class EntitySource implements IEntitySource {
 
     @Override
     public EntityType getEntityTypeByShortName(String name) {
-        for(EntityType entityType:types) {
-            if(Objects.equals(entityType.shortName(), name))
+        for (EntityType entityType : types) {
+            if (Objects.equals(entityType.id().shortName(), name))
                 return entityType;
         }
         return null;
     }
 
-    //TODO: This belongs somewhere else... maybe EntityType itself?
-    public ANBFile getWritableLocationForEntityType(EntityType entityType) {
-
-        // Check if each of the entity types is writable
-        for(ANBFile location:entityType.getSourceLocations()) {
-            if(location.isDirectory() && location.isWritable())
-                return location;
-        }
-
-        // It's not writable, fall back to the default location.
-        ANBFile defaultEntityDir = getDefaultEntityDir();
-        try {
-            return fileSystem.makePaths(defaultEntityDir, entityType.components());
-        } catch( IOException e) {
-            System.err.printf("WARNING: Unable to open default directory: %s", e);
-            return null;
-        }
-    }
-
-    //TODO: Implement me.
-    private ANBFile getDefaultEntityDir() {
-        return null;
-    }
-
     @Override
-    public IEntityDB.ICharacterBlock createNewEntityOfType(EntityType entityType, String name) {
-        //TODO: Check it doesn't already exist.
-        //TODO: Perform some sanity tests on the name.
-        //      e.g. only a-z lower case, 0-9, _
-        //      though we really should allow a bigger subset of utf8
-        return new CharacterBlock(entityType.id().child(name), getWritableLocationForEntityType(entityType).child(name), entityType);
-    }
-
-    @Override
-    public IEntityDB.ICharacterBlock getEntityByName(String name) {
-        for(IEntityDB.ICharacterBlock e:entities) {
+    public Entity getEntityByName(String name) {
+        for(Entity e:entities) {
             if(e.id().shortName().equals(name))
                 return e;
         }
@@ -79,86 +40,86 @@ public class EntitySource implements IEntitySource {
     }
 
     @Override
-    public List<IEntityDB.ICharacterBlock> getEntitiesOfType(EntityType type) {
+    public List<Entity> getEntitiesOfType(EntityType type) {
         return entities.stream()
                 .filter(e -> e.getType() == type)
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public IEntityDB getDB() {
-        return null;
-    }
 
-    public void addRoot(String s) {
-        ANBFile root = fileSystem.getFileForString(s);
-        loadEntitiesForPath(root,root, getOrCreateEntityType(new IEntityDB.EntityID()));
-    }
-
-    private void loadEntitiesForPath(ANBFile root, ANBFile file, EntityType entityType) {
-        final List<ANBFile> files = fileSystem.getAllFiles(file);
-        if(files==null)
-            throw new RuntimeException("ANBFileSystem returned null");
-
-        for(ANBFile f: files) {
-            if (f.isDirectory()) {
-                final List<String> path = f.relative_path(root);
-                IEntityDB.EntityID id = new IEntityDB.EntityID(path);
-
-                EntityType type = getOrCreateEntityType(id);
-                type.addPath(f);
-
-                loadEntitiesForPath(root, f, type);
-            } else {
-                parseEntity(root, f, entityType);
-            }
+    //TODO: This should throw something saner.
+    @Deprecated
+    public void saveEntity(Entity.EntityField entity) {
+        // Look for a writable version in each project.
+        for(ANBProject p : projects) {
+            if(p.tryUpdate(entity))
+                return;
         }
-    }
 
-    private EntityType getOrCreateEntityType(IEntityDB.EntityID id) {
-        EntityType type = typesMap.get(id);
-        if(type==null) {
-            type = createEntityType(id);
+        for(ANBProject p : projects) {
+            if(p.trySave(entity))
+                return;
         }
-        return type;
+        throw new RuntimeException("No save location found");
     }
 
-    private void parseEntity(ANBFile root, ANBFile f, EntityType entityType) {
-        createEntity(root, f, entityType);
-    }
+    public void addProject(ANBProject project) {
+        projects.add(project);
 
-
-
-    protected EntityType createEntityType(IEntityDB.EntityID id) {
-        EntityType type = new EntityType(id);
-        types.add(type);
-        typesMap.put(id,type);
-        return type;
+        //TODO: Should ensure mapper is never null.
+        if(mapper==null)
+            throw new NullPointerException("mapper should not be null");
+        project.getEntities().stream()
+                .map(mapper::mapToEntity)
+                .forEach(entities::add);
+        //TODO: Rehash any cached info.
+        //TODO: Let the listeners know?
     }
 
     @Override
-    public List<EntityType> getSubtypesOf(EntityType entityType) {
-        return typesMap.values()
-                .stream()
-                .filter(type -> IEntityDB.EntityID.isDirectChild(entityType.id(), type.id()))
+    public void addListener(EntitySourceListener entitySourceListener) {
+        listeners.add(entitySourceListener);
+    }
+
+    @Override
+    public List<Entity> getAllEntitiesOfType(EntityType entityType) {
+        return entities.stream()
+                .filter( v -> v!=null )
+                .filter(v -> Objects.equals(v.getType(), entityType))
                 .collect(Collectors.toList());
     }
 
-    protected void createEntity(ANBFile root, ANBFile f, EntityType entityType) {
-        entities.add(new CharacterBlock(new IEntityDB.EntityID(f.relative_path(root)), f, entityType));
+    @Override
+    public List<EntityType> getChildTypesOfType(EntityType entityType) {
+        throw new RuntimeException("NYI");
     }
 
     @Override
-    public EntityType getEntityTypeByID(IEntityDB.EntityID id) {
+    public void saveEntity(Entity entity) {
+        throw new RuntimeException("NYI");
+    }
+
+    @Override
+    public EntityType getEntityTypeByID(EntityID id) {
         return typesMap.get(id);
     }
 
     @Override
-    public IEntityDB.ICharacterBlock getEntityById(IEntityDB.EntityID id) {
-        for(IEntityDB.ICharacterBlock entity:entities) {
+    public Entity getEntityById(EntityID id) {
+        for(Entity entity:entities) {
             if(entity!=null && Objects.equals(entity.id(),id))
                 return entity;
         }
         return null;
+    }
+
+    public void setEntityMapper(EntityMapper mapper) {
+        if(mapper==null)
+            throw new NullPointerException("mapper can not be null");
+        this.mapper = mapper;
+    }
+
+    public EntityMapper getEntityMapper() {
+        return mapper;
     }
 }

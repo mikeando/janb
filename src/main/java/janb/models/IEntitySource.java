@@ -1,64 +1,33 @@
 package janb.models;
 
-import janb.util.ANBFile;
-
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Provides a little more context than the lower level IEntityDB
  *
+ * @todo Changed the things that should return Entity to do so.
+ * @todo Removed the deprecated crufteroonie
  */
 public interface IEntitySource {
 
+    List<Entity> getEntitiesOfType(EntityType type);
+
+    void addListener(EntitySourceListener entitySourceListener);
+
+    Entity getEntityById(EntityID id);
+
     List<EntityType> getEntityTypes();
 
+    EntityType getEntityTypeByID(EntityID id);
+
+    List<Entity> getAllEntitiesOfType(EntityType entityType);
+    List<EntityType> getChildTypesOfType(EntityType entityType);
+
+    void saveEntity(Entity entity);
+
+    //TODO: Is this needed?
     EntityType getEntityTypeByShortName(String name);
 
-    IEntityDB.ICharacterBlock createNewEntityOfType(EntityType characterEntityType, String name);
-
-    IEntityDB.ICharacterBlock getEntityByName(String a_character);
-
-    EntityType getEntityTypeByID(IEntityDB.EntityID idB);
-
-    IEntityDB.ICharacterBlock getEntityById(IEntityDB.EntityID id);
-
-    List<EntityType> getSubtypesOf(EntityType entityType);
-
-    public static class EntityType {
-        private final List<ANBFile> locations = new ArrayList<>(1);
-        private final IEntityDB.EntityID id;
-
-        public EntityType(IEntityDB.EntityID id) {
-            this.id=id;
-        }
-
-        public List<String> components() {
-            return id.components();
-        }
-
-        public String fullName() {
-            return id.asString();
-        }
-
-        public String shortName() {
-            return id.shortName();
-        }
-
-        public IEntityDB.EntityID id() {
-            return id;
-        }
-
-        public List<ANBFile> getSourceLocations() {
-            return Collections.unmodifiableList(locations);
-        }
-
-        public void addPath(ANBFile file) {
-            locations.add(file);
-        }
-    }
-
-    List<IEntityDB.ICharacterBlock> getEntitiesOfType(EntityType type);
-    IEntityDB getDB();
+    //TODO: Is this needed
+    Entity getEntityByName(String name);
 }
