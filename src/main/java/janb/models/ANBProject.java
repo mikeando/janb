@@ -1,15 +1,17 @@
 package janb.models;
 
+import janb.project.ProjectDB;
+
 import java.util.List;
 
 /**
 * Created by michaelanderson on 24/03/2015.
 */
 public interface ANBProject {
-    boolean tryUpdate(Entity.EntityField entity);
-    boolean trySave(Entity.EntityField entity);
+    boolean tryUpdate(ProjectDB.EntityField entity);
+    boolean trySave(ProjectDB.EntityField entity);
 
-    Entity.ConstEntityField getEntityById(EntityID id);
+    ProjectDB.ConstEntityField getEntityById(EntityID id);
 
-    List<Entity.ConstEntityField> getEntities();
+    List<ProjectDB.ConstEntityField> getEntities();
 }

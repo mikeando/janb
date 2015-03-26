@@ -1,5 +1,7 @@
 package janb.models;
 
+import janb.project.ProjectDB;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,7 +51,7 @@ public class EntitySource implements IEntitySource {
 
     //TODO: This should throw something saner.
     @Deprecated
-    public void saveEntity(Entity.EntityField entity) {
+    public void saveEntity(ProjectDB.EntityField entity) {
         // Look for a writable version in each project.
         for(ANBProject p : projects) {
             if(p.tryUpdate(entity))

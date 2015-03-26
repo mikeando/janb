@@ -1,5 +1,6 @@
 package janb.models;
 
+import janb.project.ProjectDB;
 import janb.util.ANBFile;
 import janb.util.ANBFileSystem;
 import org.jmock.Expectations;
@@ -435,22 +436,22 @@ public class EntitySourceTest {
         }
 
         @Override
-        public boolean tryUpdate(Entity.EntityField entity) {
+        public boolean tryUpdate(ProjectDB.EntityField entity) {
             return false;
         }
 
         @Override
-        public boolean trySave(Entity.EntityField entity) {
+        public boolean trySave(ProjectDB.EntityField entity) {
             return false;
         }
 
         @Override
-        public Entity.ConstEntityField getEntityById(EntityID id) {
+        public ProjectDB.ConstEntityField getEntityById(EntityID id) {
             return null;
         }
 
         @Override
-        public List<Entity.ConstEntityField> getEntities() {
+        public List<ProjectDB.ConstEntityField> getEntities() {
             return Collections.EMPTY_LIST;
 
         }
@@ -500,7 +501,7 @@ public class EntitySourceTest {
 
         final EntityType root = entityTypes.get(0);
         assertThat(root.id(), is(equalTo(EntityID.fromComponents())));
-        assertThat(root, is(instanceOf(Entity.ConstCollectionField.class)));
+        assertThat(root, is(instanceOf(ProjectDB.ConstCollectionField.class)));
     }
 
     @Test public void testCanGetEntityTypesOneLevelDeep() {
@@ -531,11 +532,11 @@ public class EntitySourceTest {
         EntityMapper mapper = context.mock(EntityMapper.class);
 
 
-        Entity.ConstEntityField e1 = context.mock(Entity.ConstEntityField.class,"e1");
-        Entity.ConstEntityField e2 = context.mock(Entity.ConstEntityField.class,"e2");
-        ArrayList<Entity.ConstEntityField> entitiesInA = new ArrayList<>();
+        ProjectDB.ConstEntityField e1 = context.mock(ProjectDB.ConstEntityField.class,"e1");
+        ProjectDB.ConstEntityField e2 = context.mock(ProjectDB.ConstEntityField.class,"e2");
+        ArrayList<ProjectDB.ConstEntityField> entitiesInA = new ArrayList<>();
         entitiesInA.add(e1);
-        ArrayList<Entity.ConstEntityField> entitiesInB = new ArrayList<>();
+        ArrayList<ProjectDB.ConstEntityField> entitiesInB = new ArrayList<>();
         entitiesInB.add(e2);
 
         Entity ee1 = new Entity();
@@ -599,9 +600,9 @@ public class EntitySourceTest {
         assertThat(entity1.id(), is(equalTo(EntityID.fromComponents("a"))));
         assertThat(entity2.id(), is(equalTo(EntityID.fromComponents("b"))));
 
-        assertThat(root, is(instanceOf(Entity.ConstCollectionField.class)));
-        assertThat(entity1, is(instanceOf(Entity.ConstCollectionField.class)));
-        assertThat(entity2, is(instanceOf(Entity.ConstCollectionField.class)));
+        assertThat(root, is(instanceOf(ProjectDB.ConstCollectionField.class)));
+        assertThat(entity1, is(instanceOf(ProjectDB.ConstCollectionField.class)));
+        assertThat(entity2, is(instanceOf(ProjectDB.ConstCollectionField.class)));
     }
 
     @Test public void testCanGetEntityTypesTwoLevelsDeep() {

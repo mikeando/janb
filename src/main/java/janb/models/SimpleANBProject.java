@@ -1,5 +1,6 @@
 package janb.models;
 
+import janb.project.ProjectDB;
 import janb.util.ANBFile;
 
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.util.Map;
 */
 public class SimpleANBProject implements ANBProject {
     //TODO: Shift this into the project?
-    private Entity.ConstCollectionField loadCollectionEntity(ANBFile path, EntityID entityID) throws IOException {
+    private ProjectDB.ConstCollectionField loadCollectionEntity(ANBFile path, EntityID entityID) throws IOException {
         ANBFile typeFile = path.child("_type");
         if(typeFile!=null && typeFile.isDirectory())
             throw new RuntimeException("_type must not be a directory");
@@ -23,12 +24,12 @@ public class SimpleANBProject implements ANBProject {
         }
 
         final List<ANBFile> files = path.getAllFiles();
-        Map<String, Entity.ConstEntityField> fields = new HashMap<>();
+        Map<String, ProjectDB.ConstEntityField> fields = new HashMap<>();
         for(ANBFile file : files) {
             if(!file.isDirectory())
                 continue;
             String fileName  = file.getName();
-            Entity.AbstractConstEntityField child = loadEntity(file, entityID.child(fileName));
+            ProjectDB.AbstractConstEntityField child = loadEntity(file, entityID.child(fileName));
             if(child!=null) {
                 fields.put(fileName, child);
             }
@@ -36,11 +37,11 @@ public class SimpleANBProject implements ANBProject {
 
         //TODO: Need to use the prototype too - tricky as we can't get it until we've loaded everything
         //      But the return value is const...
-        return new Entity.ConstCollectionField(entityID, fields, null);
+        return new ProjectDB.ConstCollectionField(entityID, fields, null);
     }
 
     //TODO: Throwing RuntimeExceptions from inside this is not appropriate.
-    private Entity.AbstractConstEntityField loadEntity(ANBFile path, EntityID id) throws IOException {
+    private ProjectDB.AbstractConstEntityField loadEntity(ANBFile path, EntityID id) throws IOException {
         ANBFile typeFile = path.child("_type");
         if(typeFile!=null && typeFile.isDirectory())
             throw new RuntimeException("_type must not be a directory");
@@ -60,17 +61,17 @@ public class SimpleANBProject implements ANBProject {
         throw new RuntimeException("Unknown type:"+type);
     }
 
-    private Entity.AbstractConstEntityField loadRefEntity(ANBFile path, EntityID id) {
+    private ProjectDB.AbstractConstEntityField loadRefEntity(ANBFile path, EntityID id) {
         return null;
     }
 
-    private Entity.ConstTextField loadTextEntity(ANBFile path, EntityID id) throws IOException {
+    private ProjectDB.ConstTextField loadTextEntity(ANBFile path, EntityID id) throws IOException {
         return null;
     }
 
 
     @Deprecated
-    private void loadEntitiesForPath(ANBFile root, ANBFile file, Entity.CollectionField entityType) {
+    private void loadEntitiesForPath(ANBFile root, ANBFile file, ProjectDB.CollectionField entityType) {
         throw new RuntimeException("NYI");
 
 //        final List<ANBFile> files = file.getAllFiles();
@@ -93,22 +94,22 @@ public class SimpleANBProject implements ANBProject {
     }
 
     @Override
-    public boolean tryUpdate(Entity.EntityField entity) {
+    public boolean tryUpdate(ProjectDB.EntityField entity) {
         throw new RuntimeException("NYI");
     }
 
     @Override
-    public boolean trySave(Entity.EntityField entity) {
+    public boolean trySave(ProjectDB.EntityField entity) {
         throw new RuntimeException("NYI");
     }
 
     @Override
-    public Entity.ConstEntityField getEntityById(EntityID id) {
+    public ProjectDB.ConstEntityField getEntityById(EntityID id) {
         throw new RuntimeException("NYI");
     }
 
     @Override
-    public List<Entity.ConstEntityField> getEntities() {
+    public List<ProjectDB.ConstEntityField> getEntities() {
         return Collections.EMPTY_LIST;
     }
 }

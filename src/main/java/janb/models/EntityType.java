@@ -1,5 +1,7 @@
 package janb.models;
 
+import janb.project.ProjectDB;
+
 import java.util.List;
 
 /**
@@ -16,7 +18,7 @@ public class EntityType {
         return id;
     }
 
-    public Entity.ConstCollectionField asEntity() {
+    public ProjectDB.ConstCollectionField asEntity() {
         throw new RuntimeException("NYI");
     }
 
