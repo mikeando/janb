@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Everything is an EntityField.
+ * Everything is an DBField.
  *
  * Disk Layout:
  *  * Each directory denotes an entity.

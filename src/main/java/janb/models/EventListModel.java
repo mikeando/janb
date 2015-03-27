@@ -35,7 +35,18 @@ public class EventListModel extends EntityListModel<EventModel> {
         final ArrayList<Pair<String, Action>> actions = new ArrayList<>();
         actions.add( new Pair<>("create", (Action) controller -> {
             final EntityID id = entityType.id().child("donkey");
-            final Entity entity = new Entity();
+            //TODO: Use a real class for this
+            final Entity entity = new Entity() {
+                @Override
+                public EntityID id() {
+                    return id;
+                }
+
+                @Override
+                public EntityType getType() {
+                    return entityType;
+                }
+            };
             entitySource.saveEntity(entity);
         }));
         return actions;

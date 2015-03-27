@@ -473,13 +473,14 @@ public class EntitySourceTest {
         // Check
         assertThat(entityTypes, is(notNullValue()));
         assertThat(entityTypes.size(), is(1));
+        assertThat(entityTypes.get(0).id(), is(equalTo(EntityID.fromComponents())));
     }
 
     /**
      * In the new scheme an EntityType is just an Entity of type CollectionEntity
      * in particular any collection tagged with type = collection:!category
      *
-     * !category is one of the few builtin collection types.
+     * @TODO: This now seems identical to the test above.
      */
     @Test public void testCanGetEntityCategoriesWhenEmpty_newScheme() {
 
@@ -501,7 +502,6 @@ public class EntitySourceTest {
 
         final EntityType root = entityTypes.get(0);
         assertThat(root.id(), is(equalTo(EntityID.fromComponents())));
-        assertThat(root, is(instanceOf(ProjectDB.ConstCollectionField.class)));
     }
 
     @Test public void testCanGetEntityTypesOneLevelDeep() {
@@ -539,8 +539,8 @@ public class EntitySourceTest {
         ArrayList<ProjectDB.ConstDBField> entitiesInB = new ArrayList<>();
         entitiesInB.add(e2);
 
-        Entity ee1 = new Entity();
-        Entity ee2 = new Entity();
+        Entity ee1 = context.mock(Entity.class,"ee1");
+        Entity ee2 = context.mock(Entity.class,"ee2");
 
         EntitySource source = new EntitySource();
         source.setEntityMapper(mapper);
@@ -728,12 +728,33 @@ public class EntitySourceTest {
         assertThat(sourceLocations.get(0), is(project));
     }
 
+    ANBProject getDefaultProject() {
+//        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
+//        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+//        return project;
+
+        ANBProject project = context.mock((ANBProject.class));
+        final List<ProjectDB.ConstDBField> entities = new ArrayList<>();
+        ProjectDB.ConstDBField e1 = context.mock(ProjectDB.ConstDBField.class,"character.an_entity");
+        ProjectDB.ConstDBField e2 = context.mock(ProjectDB.ConstDBField.class,"character.another_entity");
+        entities.add(e1);
+        entities.add(e2);
+
+        context.checking(new Expectations() {{
+            allowing(e1).getLocation(); will(returnValue(EntityID.fromComponents("character","an_entity")));
+            allowing(e2).getLocation(); will(returnValue(EntityID.fromComponents("character","another_entity")));
+            allowing(project).getEntities();
+            will(returnValue(entities));
+        }});
+
+        return project;
+    }
+
+
     @Test
     public void testGetEntityByID() throws Exception {
-        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
         EntitySource entitySource = new EntitySource();
-        entitySource.addProject(project);
+        entitySource.addProject(getDefaultProject());
 
         EntityID idA = (new EntityID()).child("character").child("an_entity");
         EntityID idB = (new EntityID()).child("character").child("another_entity");
@@ -743,11 +764,11 @@ public class EntitySourceTest {
         final Entity entityB = entitySource.getEntityById(idB);
         final Entity entityC = entitySource.getEntityById(idC);
 
+        context.assertIsSatisfied();
+
         assertThat(entityC, is(nullValue()));
         assertThat(entityA, is(notNullValue()));
         assertThat(entityB, is(notNullValue()));
-
-
     }
 
     @Test

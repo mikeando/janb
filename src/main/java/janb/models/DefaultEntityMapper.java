@@ -8,6 +8,16 @@ import janb.project.ProjectDB;
 public class DefaultEntityMapper implements EntityMapper {
     @Override
     public Entity mapToEntity(ProjectDB.DBField e1) {
-        return null;
+        return new Entity() {
+            @Override
+            public EntityID id() {
+                return e1.getLocation();
+            }
+
+            @Override
+            public EntityType getType() {
+                return null;
+            }
+        };
     }
 }

@@ -17,6 +17,9 @@ public class EntitySource implements IEntitySource {
     private List<EntitySourceListener> listeners = new ArrayList<>();
     private EntityMapper mapper = new DefaultEntityMapper();
 
+    public EntitySource() {
+        types.add(new EntityType(EntityID.fromComponents()));
+    }
 
     @Override
     public List<EntityType> getEntityTypes() {
