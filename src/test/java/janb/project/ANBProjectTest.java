@@ -83,4 +83,9 @@ public class ANBProjectTest {
     public void testGetEntities() throws Exception {
         fail("NYI");
     }
+
+    @Test
+    public void testGetFiles() throws Exception {
+        fail("NYI");
+    }
 }

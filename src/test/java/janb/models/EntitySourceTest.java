@@ -1,5 +1,6 @@
 package janb.models;
 
+import janb.mxl.MxlFile;
 import janb.project.ProjectDB;
 import janb.util.ANBFile;
 import janb.util.ANBFileSystem;
@@ -453,7 +454,11 @@ public class EntitySourceTest {
         @Override
         public List<ProjectDB.ConstDBField> getEntities() {
             return Collections.EMPTY_LIST;
+        }
 
+        @Override
+        public List<MxlFile> getFiles() {
+            return new ArrayList<>();
         }
     }
 

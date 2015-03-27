@@ -130,20 +130,13 @@ public class Main extends Application {
 
         Controller sampleController = fxmlLoader.getController();
         ANBFileSystem fs = new SimpleANBFileSystem();
-        final File sourceLocation = new File("/Users/michaelanderson/JANBData/entities");
-
-
         SimpleANBProject project = new SimpleANBProject(fs.getFileForString("/Users/michaelanderson/JANBData/entities"));
-        //sourceLocation.getAbsolutePath();
 
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
 
 
-        Model model = new Model(entitySource);
-
-        //TODO: We shouldn't use this now.. just use the entitySource instead.
-        model.loadFromPath(sourceLocation, sampleController.getViewModel());
+        Model model = new Model(entitySource,sampleController.getViewModel());
 
         sampleController.model = model;
 

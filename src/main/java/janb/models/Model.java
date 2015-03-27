@@ -3,7 +3,6 @@ package janb.models;
 import janb.Action;
 import javafx.util.Pair;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,9 +19,9 @@ public class Model extends AbstractModel {
     public final ScriptListModel scripts;
     List<IModel> extraCategories;
 
-    public Model(IEntitySource entitySource) {
+    public Model(IEntitySource entitySource, IViewModel viewModel) {
         characters = new CharacterListModel();
-        files = new FileListModel();
+        files = new FileListModel(viewModel, entitySource);
         locations = new LocationListModel();
         events = new EventListModel(entitySource);
         scripts = new ScriptListModel();
@@ -58,9 +57,5 @@ public class Model extends AbstractModel {
     public void addCategory(IModel model) {
         extraCategories.add(model);
         publishEvent(ModelEvent.addEvent(this, model, getChildModels().size() - 1));
-    }
-
-    public void loadFromPath(File file, IViewModel viewModel) {
-        files.loadFromPath(file, viewModel);
     }
 }

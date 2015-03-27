@@ -2,14 +2,12 @@ package janb.project;
 
 import janb.models.ANBProject;
 import janb.models.EntityID;
+import janb.mxl.MxlFile;
 import janb.util.ANBFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
 * Created by michaelanderson on 24/03/2015.
@@ -123,5 +121,32 @@ public class SimpleANBProject implements ANBProject {
     @Override
     public List<ProjectDB.ConstDBField> getEntities() {
         return Collections.EMPTY_LIST;
+    }
+
+    @Override
+    public List<MxlFile> getFiles() {
+
+//        if(f.getPath().endsWith(".mxl"))
+//            continue;
+//
+//        final File metadataFile = new File(f.toString() + ".mxl");
+//        if (fileListContains(fileList, metadataFile)) {
+//            System.err.printf("Found file with .mxl data : %s + %s\n", f, metadataFile);
+//            MxlMetadataFile metadata = FileListModel.parseMXLFile(metadataFile);
+//            System.err.printf("Metadata = %s\n", metadata);
+//            try {
+//                MxlFile mxlFile = MxlFile.createAndBind(f, metadata);
+//                entries.add(new FileModel(mxlFile, viewModel));
+//                System.err.printf("MxlFile = %s\n", mxlFile);
+//            } catch (IOException | MxlConstructionException e) {
+//                System.err.printf("ERROR unable to load file %s : %s\n", f, e.getMessage());
+//                e.printStackTrace();
+//            }
+//            continue;
+//        }
+//
+//
+//        System.err.printf("No a .mxl file for %s - ignoring\n", f);    }
+        return new ArrayList<>();
     }
 }

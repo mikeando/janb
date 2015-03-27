@@ -1,5 +1,6 @@
 package janb.models;
 
+import janb.mxl.MxlFile;
 import janb.project.ProjectDB;
 
 import java.util.*;
@@ -42,6 +43,15 @@ public class EntitySource implements IEntitySource {
                 return e;
         }
         return null;
+    }
+
+    @Override
+    public List<MxlFile> getFiles() {
+        List<MxlFile> result = new ArrayList<>();
+        for (ANBProject project : projects) {
+            result.addAll(project.getFiles());
+        }
+        return result;
     }
 
     @Override

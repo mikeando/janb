@@ -1,5 +1,7 @@
 package janb.models;
 
+import janb.mxl.MxlFile;
+
 import java.util.List;
 
 /**
@@ -30,4 +32,6 @@ public interface IEntitySource {
 
     //TODO: Is this needed
     Entity getEntityByName(String name);
+
+    List<MxlFile> getFiles();
 }

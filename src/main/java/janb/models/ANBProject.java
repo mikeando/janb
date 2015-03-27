@@ -1,5 +1,6 @@
 package janb.models;
 
+import janb.mxl.MxlFile;
 import janb.project.ProjectDB;
 
 import java.util.List;
@@ -14,4 +15,6 @@ public interface ANBProject {
     ProjectDB.ConstDBField getEntityById(EntityID id);
 
     List<ProjectDB.ConstDBField> getEntities();
+
+    List<MxlFile> getFiles();
 }

@@ -8,7 +8,6 @@ import janb.mxl.MxlMetadataFile;
 import javafx.util.Pair;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,8 +17,12 @@ import java.util.List;
  */
 public class FileListModel extends AbstractModel {
     private final List<FileModel> entries;
+    private final IViewModel viewModel;
+    private final IEntitySource entitySource;
 
-    FileListModel() {
+    public FileListModel(IViewModel viewModel, IEntitySource entitySource) {
+        this.viewModel = viewModel;
+        this.entitySource = entitySource;
         entries = new ArrayList<>();
     }
 
@@ -54,37 +57,11 @@ public class FileListModel extends AbstractModel {
         return false;
     }
 
-    public void loadFromPath(File path, IViewModel viewModel) {
-        System.err.printf("Loading root %s\n", path);
-        final File[] fileList = path.listFiles();
-        if(fileList==null) {
-            System.err.printf("Unable to load root path %s, maybe it doesn't exist?", path);
-            return;
-        }
-        for( File f : fileList) {
+    private void loadFiles() {
+        System.err.printf("Loading files from entitySource = %s\n", entitySource);
 
-            if(f.getPath().endsWith(".mxl"))
-                continue;
-
-            final File metadataFile = new File(f.toString() + ".mxl");
-            if (fileListContains(fileList, metadataFile)) {
-                System.err.printf("Found file with .mxl data : %s + %s\n", f, metadataFile);
-                MxlMetadataFile metadata = FileListModel.parseMXLFile(metadataFile);
-                System.err.printf("Metadata = %s\n", metadata);
-                try {
-                    MxlFile mxlFile = MxlFile.createAndBind(f, metadata);
-                    entries.add(new FileModel(mxlFile, viewModel));
-                    System.err.printf("MxlFile = %s\n", mxlFile);
-                } catch (IOException | MxlConstructionException e) {
-                    System.err.printf("ERROR unable to load file %s : %s\n", f, e.getMessage());
-                    e.printStackTrace();
-                }
-                continue;
-            }
-
-
-            System.err.printf("No a .mxl file for %s - ignoring\n", f);
-
+        for( MxlFile f : entitySource.getFiles() ) {
+            entries.add(new FileModel(f, viewModel));
         }
     }
 
@@ -100,4 +77,5 @@ public class FileListModel extends AbstractModel {
             throw new RuntimeException("Error getting metadata", c);
         }
     }
+
 }
