@@ -94,7 +94,7 @@ public class EntitySourceTest {
         }
 
         public DummyANBFileDirectory(ANBFileSystem fs, List<String> absolute_path) {
-            this(fs, absolute_path, true, new HashMap<String, ANBFile>());
+            this(fs, absolute_path, true, new HashMap<>());
         }
 
         @Override
@@ -278,17 +278,17 @@ public class EntitySourceTest {
         root.children.put("b",b);
 
         DummyANBFileNormal a_type = new DummyANBFileNormal(fs.fileSystem, asList("root","a","_type"), true);
-        a_type.content = new String("collection").getBytes(StandardCharsets.UTF_8);
+        a_type.content = "collection".getBytes(StandardCharsets.UTF_8);
         b.children.put("_type",a_type);
 
         DummyANBFileNormal b_type = new DummyANBFileNormal(fs.fileSystem, asList("root", "b", "_type"), true);
         b.children.put("_type",b_type);
-        b_type.content = new String("collection").getBytes(StandardCharsets.UTF_8);
+        b_type.content = "collection".getBytes(StandardCharsets.UTF_8);
 
 
 
         context.checking( new Expectations(){{
-            allowing(fs.fileSystem).getFileForString("/nowhere/dummyData");
+            allowing(fs.fileSystem).getFileForString(rootName);
             will(returnValue(root));
         }});
 
@@ -321,7 +321,7 @@ public class EntitySourceTest {
         DummyANBFileDirectory root = new DummyANBFileDirectory(fs.fileSystem, asList("root") );
 
         context.checking( new Expectations(){{
-            allowing(fs.fileSystem).getFileForString("/nowhere/dummyData");
+            allowing(fs.fileSystem).getFileForString(rootName);
             will(returnValue(root));
         }});
 
