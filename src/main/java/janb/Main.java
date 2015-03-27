@@ -3,7 +3,7 @@ package janb;
 import janb.controllers.Controller;
 import janb.models.EntitySource;
 import janb.models.Model;
-import janb.models.SimpleANBProject;
+import janb.project.SimpleANBProject;
 import janb.util.ANBFile;
 import janb.util.ANBFileSystem;
 import javafx.application.Application;
@@ -133,7 +133,7 @@ public class Main extends Application {
         final File sourceLocation = new File("/Users/michaelanderson/JANBData/entities");
 
 
-        SimpleANBProject project = new SimpleANBProject();
+        SimpleANBProject project = new SimpleANBProject(fs.getFileForString("/Users/michaelanderson/JANBData/entities"));
         //sourceLocation.getAbsolutePath();
 
         EntitySource entitySource = new EntitySource();
