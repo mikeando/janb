@@ -67,15 +67,6 @@ public class FileListModel extends AbstractModel {
 
 
 
-    public static MxlMetadataFile parseMXLFile(File f) {
-        System.err.printf("Trying to open MXL file %s\n", f);
-        try {
-            return new MxlMetadataFile(f);
-        } catch (MxlConstructionException c) {
-            System.err.printf("Error getting metadata\n%s\n", c);
-            c.printStackTrace();
-            throw new RuntimeException("Error getting metadata", c);
-        }
-    }
+
 
 }
