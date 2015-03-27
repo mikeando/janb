@@ -1,6 +1,7 @@
-package janb.models;
+package janb.project;
 
-import janb.project.ProjectDB;
+import janb.models.ANBProject;
+import janb.models.EntityID;
 import janb.util.ANBFile;
 
 import java.io.IOException;
@@ -14,6 +15,11 @@ import java.util.Map;
 * Created by michaelanderson on 24/03/2015.
 */
 public class SimpleANBProject implements ANBProject {
+
+    public SimpleANBProject(ANBFile sourcePath) {
+
+    }
+
     //TODO: Shift this into the project?
     private ProjectDB.ConstCollectionField loadCollectionEntity(ANBFile path, EntityID entityID) throws IOException {
         ANBFile typeFile = path.child("_type");
@@ -95,17 +101,23 @@ public class SimpleANBProject implements ANBProject {
 
     @Override
     public boolean tryUpdate(ProjectDB.DBField entity) {
+        if(entity==null)
+            throw new NullPointerException("entity can not be null");
         throw new RuntimeException("NYI");
     }
 
     @Override
     public boolean trySave(ProjectDB.DBField entity) {
+        if(entity==null)
+            throw new NullPointerException("entity can not be null");
         throw new RuntimeException("NYI");
     }
 
     @Override
     public ProjectDB.ConstDBField getEntityById(EntityID id) {
-        throw new RuntimeException("NYI");
+        if(id==null)
+            throw new NullPointerException("id can not be null");
+        return null;
     }
 
     @Override
