@@ -1,5 +1,6 @@
 package janb.models;
 
+import janb.mxl.IMxlFile;
 import janb.mxl.MxlFile;
 import janb.project.ProjectDB;
 
@@ -16,5 +17,11 @@ public interface ANBProject {
 
     List<ProjectDB.ConstDBField> getEntities();
 
+    List<ProjectDB.ConstDBField> getPrototypes();
+
     List<MxlFile> getFiles();
+
+    List<ProjectDB.ConstDBField> getEntityTypes();
+
+    void trySave(IMxlFile file, EntityID entityID);
 }

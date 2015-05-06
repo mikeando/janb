@@ -8,11 +8,8 @@ import java.util.List;
  */
 public interface ANBFile {
 
-    //TODO: Hoist this into the fileSystem?
     List<String> relative_path(ANBFile root);
     public List<ANBFile> getAllFiles();
-
-    ANBFileSystem getFS();
 
     public boolean isDirectory();
     boolean isWritable();
@@ -24,4 +21,19 @@ public interface ANBFile {
     String getName();
 
     byte[] readContents() throws IOException;
+
+    /**
+     * @Note use of this is racy. It could return true but then have a read fail immediately after if
+     * the file has been removed in the interim. It is usually better to just try to read/write the
+     * file with the right settings and handle failure.
+     */
+    boolean exists();
+
+    boolean hasExtension(String s);
+    ANBFile withoutExtension(String s);
+    ANBFile withExtension(String s);
+
+    ANBFile createSubdirectory(String s);
+
+    void createFile(String s, byte[] rawData);
 }

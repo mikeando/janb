@@ -1,15 +1,17 @@
 package janb.models;
 
+import janb.mxl.IMxlFile;
 import janb.mxl.MxlFile;
 import janb.project.ProjectDB;
 import janb.util.ANBFile;
-import janb.util.ANBFileSystem;
+import janb.util.dummy.DummyANBFileDirectory;
+import janb.util.dummy.DummyANBFileNormal;
 import org.jmock.Expectations;
+import org.jmock.Mockery;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -26,424 +28,70 @@ public class EntitySourceTest {
 
     @Rule public JUnitRuleMockery context = new JUnitRuleMockery();
 
-    public static abstract class DummyANBFileBase implements ANBFile {
-        protected final ANBFileSystem fs;
-        protected final List<String> absolute_path;
-        protected final boolean isWritable;
+    private ANBFile setupOneDeepFS_newScheme(String rootName) {
 
-        // Hide this away a little?
-        public byte[] content = null;
+        DummyANBFileDirectory root = new DummyANBFileDirectory(null, asList("root") );
 
-        public DummyANBFileBase(ANBFileSystem fs, List<String> absolute_path, boolean isWritable) {
-            this.fs = fs;
-            this.absolute_path = absolute_path;
-            this.isWritable = isWritable;
-        }
+        DummyANBFileDirectory a = root.addChildDirectory("a");
+        DummyANBFileDirectory b = root.addChildDirectory("b");
 
-        @Override
-        public List<String> relative_path(ANBFile root) {
-            final DummyANBFileBase rootAsDummy = (DummyANBFileBase) root;
-            if(rootAsDummy.absolute_path.size() > absolute_path.size())
-                throw new RuntimeException("Not a child path!");
-            ArrayList<String> result = new ArrayList<>();
-            for(int i=0; i<absolute_path.size(); ++i) {
-                if(i<rootAsDummy.absolute_path.size()) {
-                    if(rootAsDummy.absolute_path.get(i).equals(absolute_path.get(i)))
-                        continue;
-                    throw new RuntimeException("Not a child path!");
-                } else {
-                    result.add(absolute_path.get(i));
-                }
-            }
-
-            return result;
-        }
-
-        @Override
-        public ANBFileSystem getFS() {
-            return fs;
-        }
-
-        @Override
-        public boolean isWritable() {
-            return isWritable;
-        }
-
-        @Override
-        public String pathAsString() {
-            return String.join("/",absolute_path);
-        }
-
-        @Override
-        public String getName() {
-            return absolute_path.get(absolute_path.size()-1);
-        }
-
-        @Override
-        public byte[] readContents() throws IOException {
-            return content;
-        }
-    }
-
-    public static class DummyANBFileDirectory extends DummyANBFileBase {
-
-        private final Map<String,ANBFile> children;
-
-        public DummyANBFileDirectory(ANBFileSystem fs, List<String> absolute_path, boolean isWritable, Map<String, ANBFile> children) {
-            super(fs, absolute_path, isWritable);
-            this.children = children;
-        }
-
-        public DummyANBFileDirectory(ANBFileSystem fs, List<String> absolute_path) {
-            this(fs, absolute_path, true, new HashMap<>());
-        }
-
-        @Override
-        public boolean isDirectory() {
-            return true;
-        }
-
-        @Override
-        public ANBFile child(String name) {
-            return children.get(name);
-        }
-
-
-
-        @Override
-        public List<ANBFile> getAllFiles() {
-            return Collections.unmodifiableList(new ArrayList<>(children.values()));
-        }
-    }
-
-    public static class DummyANBFileNormal extends DummyANBFileBase {
-
-        public DummyANBFileNormal(ANBFileSystem fs, List<String> absolute_path, boolean isWritable) {
-            super(fs, absolute_path, isWritable);
-        }
-
-        @Override
-        public boolean isDirectory() {
-            return false;
-        }
-
-        @Override
-        public ANBFile child(String name) {
-            return null;
-        }
-
-        @Override
-        public List<ANBFile> getAllFiles() {
-            return Collections.EMPTY_LIST;
-        }
-    }
-
-    private static class DummyFileSystemDetails {
-        private ANBFileSystem fileSystem;
-
-        private final JUnitRuleMockery context;
-
-        private DummyFileSystemDetails(JUnitRuleMockery context) {
-            this.context = context;
-            fileSystem = context.mock(ANBFileSystem.class);
-        }
-    }
-
-    @Deprecated
-    private static class SimpleFileSystemDetails {
-        private ANBFileSystem fileSystem;
-        private Map<String, ANBFile> files = new HashMap<>();
-        private Map<ANBFile, List<ANBFile>> childrenOfFile = new HashMap<>();
-
-        private final JUnitRuleMockery context;
-
-        private SimpleFileSystemDetails(JUnitRuleMockery context) {
-            this.context = context;
-            fileSystem = context.mock(ANBFileSystem.class);
-        }
-
-        ANBFile file(String key) {
-            assertThat(files, is(notNullValue()));
-            final ANBFile file = files.get(key);
-            assertThat(file, is(notNullValue()));
-            return file;
-        }
-
-        ANBFile createDirectory(String name) {
-            return createDirectory(name,name);
-        }
-
-        ANBFile createDirectory(String name, String mockName) {
-            final ANBFile file = context.mock(ANBFile.class, mockName);
-            files.put(name, file);
-            final ArrayList<ANBFile> children = new ArrayList<>();
-            childrenOfFile.put(file, children);
-
-            context.checking( new Expectations(){{
-                allowing(file).getAllFiles();
-                will( returnValue(children));
-
-                allowing(file).isDirectory();
-                will(returnValue(true));
-
-                allowing(file).child("_type");
-                will(returnValue(null));
-
-                allowing(file).getName();
-                will(returnValue(name));
-
-            }});
-
-            return file;
-        }
-
-        public ANBFile createFile(String name) {
-            return createFile(name,name);
-        }
-
-        ANBFile createFile(String name, String mockName) {
-            final ANBFile file = context.mock(ANBFile.class, mockName);
-            files.put(name, file);
-            //final ArrayList<ANBFile> children = new ArrayList<>();
-            //childrenOfFile.put(file, children);
-
-            context.checking( new Expectations(){{
-                //allowing(fileSystem).getAllFiles(file);
-                //will( returnValue(children));
-
-                allowing(file).isDirectory();
-                will(returnValue(false));
-
-            }});
-
-            return file;
-        }
-
-        void addAsRootFile(String rootName, ANBFile file) {
-            // Expectations
-            context.checking( new Expectations(){{
-                allowing(fileSystem).getFileForString(rootName);
-                will( returnValue(file));
-            }});
-        }
-
-        public void addChild(ANBFile parent, ANBFile child) {
-            childrenOfFile.get(parent).add(child);
-        }
-
-
-    }
-
-    @Deprecated
-    private SimpleFileSystemDetails setupEmptyFileSystem(String rootName) {
-        SimpleFileSystemDetails fs = new SimpleFileSystemDetails(context);
-        ANBFile root = fs.createDirectory("root");
-        fs.addAsRootFile(rootName, root);
-        return fs;
-    }
-
-    @Deprecated
-    private SimpleFileSystemDetails setupOneDeepFS(String rootName) {
-
-        SimpleFileSystemDetails fs = new SimpleFileSystemDetails(context);
-
-        // Setup
-        ANBFile root = fs.createDirectory("root");
-        fs.addAsRootFile(rootName,root);
-        ANBFile aFile = fs.createDirectory("a_type");
-        ANBFile bFile = fs.createDirectory("b_type");
-
-        fs.addChild(root, aFile);
-        fs.addChild(root, bFile);
-
-        context.checking( new Expectations(){{
-            allowing(aFile).relative_path(root);
-            will(returnValue(asList("a_type")));
-            allowing(bFile).relative_path(root);
-            will(returnValue(asList("b_type")));
-            }});
-
-            return fs;
-    }
-
-    private DummyFileSystemDetails setupOneDeepFS_newScheme(String rootName) {
-
-        DummyFileSystemDetails fs = new DummyFileSystemDetails(context);
-
-        DummyANBFileDirectory root = new DummyANBFileDirectory(fs.fileSystem, asList("root") );
-
-        DummyANBFileDirectory a = new DummyANBFileDirectory(fs.fileSystem, asList("root","a"));
-        root.children.put("a", a);
-
-        DummyANBFileDirectory b = new DummyANBFileDirectory(fs.fileSystem, asList("root","b"));
-        root.children.put("b",b);
-
-        DummyANBFileNormal a_type = new DummyANBFileNormal(fs.fileSystem, asList("root","a","_type"), true);
+        DummyANBFileNormal a_type = a.addChildFile("_type");
         a_type.content = "collection".getBytes(StandardCharsets.UTF_8);
-        b.children.put("_type",a_type);
 
-        DummyANBFileNormal b_type = new DummyANBFileNormal(fs.fileSystem, asList("root", "b", "_type"), true);
-        b.children.put("_type",b_type);
+        DummyANBFileNormal b_type = b.addChildFile("_type");
         b_type.content = "collection".getBytes(StandardCharsets.UTF_8);
 
-
-
-        context.checking( new Expectations(){{
-            allowing(fs.fileSystem).getFileForString(rootName);
-            will(returnValue(root));
-        }});
-
-        return fs;
+        return root;
     }
 
-    private DummyFileSystemDetails setupTwoDeepFS_newScheme(String s) {
-        DummyFileSystemDetails fs = new DummyFileSystemDetails(context);
-        DummyANBFileDirectory root = new DummyANBFileDirectory(fs.fileSystem, asList("root") );
-
-        context.checking( new Expectations(){{
-            allowing(fs.fileSystem).getFileForString(s);
-            will(returnValue(root));
-        }});
-
-        DummyANBFileDirectory a = new DummyANBFileDirectory(fs.fileSystem, asList("root","a"));
-        root.children.put("a", a);
-
-        DummyANBFileDirectory b = new DummyANBFileDirectory(fs.fileSystem, asList("root","a", "b"));
-        a.children.put("b", b);
-
-
-        return fs;
+    private ANBFile setupTwoDeepFS_newScheme(String s) {
+        DummyANBFileDirectory root = new DummyANBFileDirectory(null, asList("root") );
+        DummyANBFileDirectory a = root.addChildDirectory("a");
+        DummyANBFileDirectory b = a.addChildDirectory("b");
+        return root;
     }
 
-    private DummyFileSystemDetails setupEmptyFS_newScheme(String rootName) {
-
-        DummyFileSystemDetails fs = new DummyFileSystemDetails(context);
-
-        DummyANBFileDirectory root = new DummyANBFileDirectory(fs.fileSystem, asList("root") );
-
-        context.checking( new Expectations(){{
-            allowing(fs.fileSystem).getFileForString(rootName);
-            will(returnValue(root));
-        }});
-
-        return fs;
-    }
-
-    private SimpleFileSystemDetails setupDefaultFS(String rootName) {
-
-        SimpleFileSystemDetails fs = new SimpleFileSystemDetails(context);
-
-        // Setup
-        ANBFile root = fs.createDirectory("root");
-        fs.addAsRootFile(rootName,root);
-        ANBFile characterDir = fs.createDirectory("character");
-        ANBFile locationDir = fs.createDirectory("location");
-
-        ANBFile an_entity = fs.createFile("an_entity");
-        ANBFile another_entity = fs.createFile("another_entity");
-
-        fs.addChild(root, characterDir);
-        fs.addChild(root, locationDir);
-
-        fs.addChild(characterDir,an_entity);
-        fs.addChild(characterDir,another_entity);
-
-        context.checking( new Expectations(){{
-            allowing(characterDir).relative_path(root);
-            will(returnValue(asList("character")));
-            allowing(locationDir).relative_path(root);
-            will(returnValue(asList("location")));
-
-            allowing(an_entity).relative_path(root);
-            will(returnValue(asList("character","an_entity")));
-            allowing(another_entity).relative_path(root);
-            will(returnValue(asList("character","another_entity")));
-        }});
-
-        return fs;
+    private ANBFile setupEmptyFS_newScheme(String rootName) {
+        DummyANBFileDirectory root = new DummyANBFileDirectory(null, asList("root") );
+        return root;
     }
 
 
-    private SimpleFileSystemDetails setupFSWithDupeName(String rootName) {
-        SimpleFileSystemDetails fs = new SimpleFileSystemDetails(context);
-        ANBFile root = fs.createDirectory("root");
-        fs.addAsRootFile(rootName,root);
 
-        ANBFile aDir = fs.createDirectory("character");
-        ANBFile bDir = fs.createDirectory("location");
+    private void setupFSWithDupeName(DummyANBFileDirectory root) {
 
-        ANBFile aDupe = fs.createDirectory("duped_entity_type", "a_duped_entity_type");
-        ANBFile bDupe = fs.createDirectory("duped_entity_type", "b_duped_entity_type");
+        DummyANBFileDirectory characterDir = root.addChildDirectory("character");
+        DummyANBFileDirectory locationDir = root.addChildDirectory("location");
 
-        fs.addChild(root,aDir);
-        fs.addChild(root,bDir);
-        fs.addChild(aDir,aDupe);
-        fs.addChild(bDir,bDupe);
-
-        context.checking( new Expectations(){{
-            allowing(root).relative_path(root);  will(returnValue(asList()));
-            allowing(aDir).relative_path(root);  will(returnValue(asList("character")));
-            allowing(bDir).relative_path(root);  will(returnValue(asList("location")));
-            allowing(aDupe).relative_path(root);  will(returnValue(asList("character","duped_entity_type")));
-            allowing(bDupe).relative_path(root);  will(returnValue(asList("location","duped_entity_type")));
-        }});
-
-        return fs;
-    }
-
-
-    private SimpleFileSystemDetails setupFSWithTwoRootsDupeName(String root1Name, String root2Name) {
-        SimpleFileSystemDetails fs = new SimpleFileSystemDetails(context);
-        ANBFile root1 = fs.createDirectory("root1");
-        fs.addAsRootFile(root1Name,root1);
-        ANBFile root2 = fs.createDirectory("root2");
-        fs.addAsRootFile(root2Name,root2);
-
-        ANBFile character1Dir = fs.createDirectory("character" ,"character in root1");
-        ANBFile dupe1 = fs.createDirectory("duped_entity_type", "duped_entity_type_in_root1");
-
-        ANBFile character2Dir = fs.createDirectory("character" ,"character in root2");
-        ANBFile dupe2 = fs.createDirectory("duped_entity_type", "duped_entity_type_in_root2");
-
-        fs.addChild(root1,character1Dir);
-        fs.addChild(character1Dir,dupe1);
-
-        fs.addChild(root2,character2Dir);
-        fs.addChild(character2Dir,dupe2);
-
-        context.checking( new Expectations(){{
-            allowing(root1).relative_path(root1);  will(returnValue(asList()));
-            allowing(character1Dir).relative_path(root1);  will(returnValue(asList("character")));
-            allowing(dupe1).relative_path(root1);  will(returnValue(asList("character","duped_entity_type")));
-
-            allowing(root2).relative_path(root2);  will(returnValue(asList()));
-            allowing(character2Dir).relative_path(root2);  will(returnValue(asList("character")));
-            allowing(dupe2).relative_path(root2);  will(returnValue(asList("character","duped_entity_type")));
-
-            allowing(dupe1).pathAsString();
-            will(returnValue(root1Name+"/character/duped_entity_type"));
-
-            allowing(dupe2).pathAsString();
-            will(returnValue(root2Name+"/character/duped_entity_type"));
-        }});
-
-        return fs;
+        ANBFile aDupe = characterDir.addChildDirectory("duped_entity_type");
+        ANBFile bDupe = locationDir.addChildDirectory("duped_entity_type");
     }
 
     public static class DummyProject implements ANBProject {
 
-        public DummyProject(ANBFileSystem fileSystem, String path) {
+        private final Mockery context;
 
+        public DummyProject(Mockery context) {
+            this.context = context;
         }
+
+        public boolean _tryUpdate = false;
+        public boolean _trySave = false;
+
+        List<ProjectDB.ConstDBField> entities = new ArrayList<>();
+        List<MxlFile> files = new ArrayList<>();
+        List<ProjectDB.ConstDBField> entityTypes = new ArrayList<>();
+        List<ProjectDB.ConstDBField> prototypes = new ArrayList<>();
+
 
         @Override
         public boolean tryUpdate(ProjectDB.DBField entity) {
-            return false;
+            return _tryUpdate;
         }
 
         @Override
         public boolean trySave(ProjectDB.DBField entity) {
-            return false;
+            return _trySave;
         }
 
         @Override
@@ -453,12 +101,49 @@ public class EntitySourceTest {
 
         @Override
         public List<ProjectDB.ConstDBField> getEntities() {
-            return Collections.EMPTY_LIST;
+            return entities;
+        }
+
+        @Override
+        public List<ProjectDB.ConstDBField> getPrototypes() {
+            return prototypes;
         }
 
         @Override
         public List<MxlFile> getFiles() {
-            return new ArrayList<>();
+            return files;
+        }
+
+        @Override
+        public List<ProjectDB.ConstDBField> getEntityTypes() {
+            return entityTypes;
+        }
+
+        @Override
+        public void trySave(IMxlFile file, EntityID entityID) {
+            throw new RuntimeException("DummyProject.trySave(IMxlFile, EntityID) not yet stubbed");
+        }
+
+        public ProjectDB.ConstDBField addMockEntity(String... path) {
+            final EntityID entityID = EntityID.fromComponents(path);
+            ProjectDB.ConstDBField e = context.mock(ProjectDB.ConstDBField.class, entityID.toString());
+            context.checking(new Expectations() {{
+                allowing(e).getLocation();
+                will(returnValue(entityID));
+            }});
+            entities.add(e);
+            return e;
+        }
+
+        public ProjectDB.ConstDBField addMockEntityType(String... path) {
+            final EntityID entityID = EntityID.fromComponents(path);
+            ProjectDB.ConstDBField e = context.mock(ProjectDB.ConstDBField.class, entityID.toString());
+            context.checking(new Expectations() {{
+                allowing(e).getLocation();
+                will(returnValue(entityID));
+            }});
+            entityTypes.add(e);
+            return e;
         }
     }
 
@@ -466,8 +151,7 @@ public class EntitySourceTest {
     @Test public void testCanGetEntityTypesWhenEmpty() {
 
         // Setup
-        SimpleFileSystemDetails fs = setupEmptyFileSystem("/nowhere/dummyData");
-        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+        DummyProject project = new DummyProject(context);
         EntitySource entitySourceImpl = new EntitySource();
 
         // Run
@@ -490,8 +174,7 @@ public class EntitySourceTest {
     @Test public void testCanGetEntityCategoriesWhenEmpty_newScheme() {
 
         // Setup
-        DummyFileSystemDetails fs = setupEmptyFS_newScheme("/nowhere/dummyData");
-        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+        DummyProject project = new DummyProject(context);
 
         EntitySource entitySourceImpl = new EntitySource();
 
@@ -511,12 +194,14 @@ public class EntitySourceTest {
 
     @Test public void testCanGetEntityTypesOneLevelDeep() {
 
-        // Setup
-        SimpleFileSystemDetails fs = setupOneDeepFS("/nowhere/dummyData");
-        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
-        EntitySource entitySourceImpl = new EntitySource();
+        //Setup
+        DummyProject project = new DummyProject(context);
+        ProjectDB.ConstDBField e1 = project.addMockEntityType("a_type");
+        ProjectDB.ConstDBField e2 = project.addMockEntityType("b_type");
+
 
         // Run
+        EntitySource entitySourceImpl = new EntitySource();
         entitySourceImpl.addProject(project);
         IEntitySource entitySource =  entitySourceImpl;
         final List<EntityType> entityTypes = entitySource.getEntityTypes();
@@ -531,11 +216,18 @@ public class EntitySourceTest {
 
     }
 
+    /**
+     * Check that the EntitySource requests information from the
+     * projects as they are added.
+     *
+     * @note Since we're directly testing the interaction of EntitySource
+     * with ANBProject, it is more appropriate to use a mock here, than
+     * a DummyProject like we do in most other tests.
+     */
     @Test public void testEntitySourceAddsEntitiesFromProjects() {
         ANBProject projectA = context.mock(ANBProject.class,"projectA");
         ANBProject projectB = context.mock(ANBProject.class,"projectB");
         EntityMapper mapper = context.mock(EntityMapper.class);
-
 
         ProjectDB.ConstDBField e1 = context.mock(ProjectDB.ConstDBField.class,"e1");
         ProjectDB.ConstDBField e2 = context.mock(ProjectDB.ConstDBField.class,"e2");
@@ -543,33 +235,64 @@ public class EntitySourceTest {
         entitiesInA.add(e1);
         ArrayList<ProjectDB.ConstDBField> entitiesInB = new ArrayList<>();
         entitiesInB.add(e2);
+        ArrayList<ProjectDB.ConstDBField> entityTypesInA = new ArrayList<>();
+        ProjectDB.ConstDBField et1 = context.mock(ProjectDB.ConstDBField.class,"et1");
+        entityTypesInA.add(et1);
+        ArrayList<ProjectDB.ConstDBField> entityTypesInB = new ArrayList<>();
+        ProjectDB.ConstDBField et2 = context.mock(ProjectDB.ConstDBField.class,"et2");
+        entityTypesInB.add(et2);
 
         Entity ee1 = context.mock(Entity.class,"ee1");
         Entity ee2 = context.mock(Entity.class,"ee2");
 
+        EntityType eet1 = context.mock(EntityType.class, "eet1");
+
+
         EntitySource source = new EntitySource();
         source.setEntityMapper(mapper);
 
-        context.checking( new Expectations(){{
-                oneOf(projectA).getEntities();
-                will(returnValue(entitiesInA));
+        context.checking(new Expectations() {{
+            oneOf(projectA).getEntities();
+            will(returnValue(entitiesInA));
 
-                oneOf(projectB).getEntities();
-                will(returnValue(entitiesInB));
+            oneOf(projectB).getEntities();
+            will(returnValue(entitiesInB));
 
-                oneOf(mapper).mapToEntity(e1);
-                will(returnValue(ee1));
+            oneOf(projectA).getEntityTypes();
+            will(returnValue(entityTypesInA));
 
-                oneOf(mapper).mapToEntity(e2);
-                will(returnValue(ee2));
-            }});
+            oneOf(projectB).getEntityTypes();
+            will(returnValue(entityTypesInB));
+
+
+            oneOf(mapper).mapToEntity(e1);
+            will(returnValue(ee1));
+
+            oneOf(mapper).mapToEntity(e2);
+            will(returnValue(ee2));
+
+            oneOf(mapper).mapToEntityType(et1);
+            will(returnValue(eet1));
+
+            oneOf(mapper).mapToEntityType(et2);
+            will(returnValue(eet1));
+
+
+        }});
 
         source.addProject(projectA);
         source.addProject(projectB);
 
         context.assertIsSatisfied();
 
-        assertThat(new HashSet<>(source.getAllEntitiesOfType(null)), is(equalTo(new HashSet<>(asList(ee1, ee2)))));
+        context.checking(new Expectations() {{
+            oneOf(ee1).getType();
+            will(returnValue(eet1));
+            oneOf(ee2).getType();
+            will(returnValue(eet1));
+        }});
+
+        assertThat(new HashSet<>(source.getAllEntitiesOfType(eet1)), is(equalTo(new HashSet<>(asList(ee1, ee2)))));
     }
 
     @Test public void testEntitySourceGetsDefaultMapper() {
@@ -581,11 +304,26 @@ public class EntitySourceTest {
         fail("Not yet implemented");
     }
 
+    /**
+     * @TODO Should really push a version of this test down into the Projects
+     */
     @Test public void testCanGetEntityCategoriesOneLevelDeep_newScheme() {
 
         // Setup
-        DummyFileSystemDetails fs = setupOneDeepFS_newScheme("/nowhere/dummyData");
-        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+        DummyProject project = new DummyProject(context);
+        final ProjectDB.ConstDBField type1 = context.mock(ProjectDB.ConstDBField.class, "type1");
+        final ProjectDB.ConstDBField type2 = context.mock(ProjectDB.ConstDBField.class, "type2");
+        // Expectations
+        context.checking( new Expectations(){{
+            allowing(type1).getLocation();
+            will( returnValue(EntityID.fromComponents("a")));
+            allowing(type2).getLocation();
+            will( returnValue(EntityID.fromComponents("b")));
+        }});
+
+        project.entityTypes.add(type1);
+        project.entityTypes.add(type2);
+
         EntitySource entitySourceImpl = new EntitySource();
 
         // Run
@@ -605,56 +343,32 @@ public class EntitySourceTest {
         assertThat(entity1.id(), is(equalTo(EntityID.fromComponents("a"))));
         assertThat(entity2.id(), is(equalTo(EntityID.fromComponents("b"))));
 
-        assertThat(root, is(instanceOf(ProjectDB.ConstCollectionField.class)));
-        assertThat(entity1, is(instanceOf(ProjectDB.ConstCollectionField.class)));
-        assertThat(entity2, is(instanceOf(ProjectDB.ConstCollectionField.class)));
+        assertThat(root, is(instanceOf(SimpleEntityType.class)));
+        assertThat(entity1, is(instanceOf(SimpleEntityType.class)));
+        assertThat(entity2, is(instanceOf(SimpleEntityType.class)));
     }
 
     @Test public void testCanGetEntityTypesTwoLevelsDeep() {
 
-        // Setup
-        ANBFileSystem fileSystem = context.mock(ANBFileSystem.class);
-        ANBFile rootFile = context.mock(ANBFile.class, "rootFile");
-        ANBFile fileA = context.mock(ANBFile.class, "a");
-        ANBFile fileAB = context.mock(ANBFile.class, "a.b");
+        //Setup
+        DummyProject project = new DummyProject(context);
+        ProjectDB.ConstDBField e1 = context.mock(ProjectDB.ConstDBField.class,"a");
+        ProjectDB.ConstDBField e2 = context.mock(ProjectDB.ConstDBField.class,"a.b");
+        project.entityTypes.add(e1);
+        project.entityTypes.add(e2);
 
         // Expectations
-        context.checking( new Expectations(){{
-            oneOf(fileSystem).getFileForString("/nowhere/dummyData");
-            will( returnValue(rootFile));
-            allowing(rootFile).getAllFiles();
-            will( returnValue(asList(fileA)));
-            allowing(rootFile).isDirectory();
-            will(returnValue(true));
-            allowing(rootFile).child("_type");
-            will(returnValue(null));
-
-
-            allowing(fileA).getAllFiles();
-            will( returnValue(asList(fileAB)));
-
-            allowing(fileAB).getAllFiles();
-            will( returnValue(asList()));
-
-            allowing(fileA).isDirectory(); will(returnValue(true));
-            allowing(fileA).relative_path(rootFile) ; will(returnValue(asList("a")));
-            allowing(fileA).getName(); will(returnValue("a"));
-            allowing(fileA).child("_type"); will(returnValue(null));
-
-            allowing(fileAB).isDirectory(); will(returnValue(true));
-            allowing(fileAB).relative_path(rootFile) ; will(returnValue(asList("a", "b")));
-            allowing(fileAB).getName(); will(returnValue("b"));
-            allowing(fileAB).child("_type"); will(returnValue(null));
+        context.checking(new Expectations() {{
+            allowing(e1).getLocation();
+            will(returnValue(EntityID.fromComponents("a")));
+            allowing(e2).getLocation();
+            will(returnValue(EntityID.fromComponents("a","b")));
         }});
 
-
-
         // Run
-        DummyProject project = new DummyProject(fileSystem, "/nowhere/dummyData");
+
         EntitySource entitySourceImpl = new EntitySource();
         entitySourceImpl.addProject(project);
-
-
 
         // Run
         IEntitySource entitySource =  entitySourceImpl;
@@ -672,9 +386,11 @@ public class EntitySourceTest {
     @Test public void testCanGetEntityTypesTwoLevelsDeep_newScheme() {
 
         // Setup
-        DummyFileSystemDetails fs = setupTwoDeepFS_newScheme("/nowhere/dummyData");
+        //ANBFile fs = setupTwoDeepFS_newScheme("/nowhere/dummyData");
 
-        DummyProject project = new DummyProject(fs.fileSystem, "/nowhere/dummyData");
+        DummyProject project = new DummyProject(context);
+        project.addMockEntityType("a");
+        project.addMockEntityType("a","b");
         EntitySource entitySourceImpl = new EntitySource();
 
         // Run
@@ -698,9 +414,21 @@ public class EntitySourceTest {
      * Same entity type referfenced from two different roots.
      */
     @Test public void testThatRepeatedEntityTypesDoNotGetAddedMultipleTimes() {
-        final SimpleFileSystemDetails defaultFS = setupFSWithTwoRootsDupeName("/nowhere/dummyData", "/donkey/food");
-        DummyProject projectA = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
-        DummyProject projectB = new DummyProject(defaultFS.fileSystem, "/donkey/food");
+        DummyProject projectA = new DummyProject(context);
+        DummyProject projectB = new DummyProject(context);
+
+        ProjectDB.ConstDBField type1 = context.mock(ProjectDB.ConstDBField.class, "type1");
+        ProjectDB.ConstDBField type2 = context.mock(ProjectDB.ConstDBField.class, "type2");
+
+        projectA.entityTypes.add(type1);
+        projectB.entityTypes.add(type2);
+
+        context.checking(new Expectations() {{
+            allowing(type1).getLocation();
+            will(returnValue(EntityID.fromComponents("character", "duped_entity_type")));
+            allowing(type2).getLocation();
+            will(returnValue(EntityID.fromComponents("character", "duped_entity_type")));
+        }});
 
 
         EntitySource entitySource = new EntitySource();
@@ -724,7 +452,7 @@ public class EntitySourceTest {
     public void testThatEntityTypesHangOnToTheirOriginalFiles() throws Exception {
         ANBProject project = context.mock(ANBProject.class);
 
-        EntityType type = new EntityType(EntityID.fromComponents("hello", "world"));
+        SimpleEntityType type = new SimpleEntityType(EntityID.fromComponents("hello", "world"));
         type.addSourceProject(project);
 
         final List<ANBProject> sourceLocations = type.getProjects();
@@ -738,18 +466,17 @@ public class EntitySourceTest {
 //        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
 //        return project;
 
-        ANBProject project = context.mock((ANBProject.class));
-        final List<ProjectDB.ConstDBField> entities = new ArrayList<>();
+        DummyProject project = new DummyProject(context);
         ProjectDB.ConstDBField e1 = context.mock(ProjectDB.ConstDBField.class,"character.an_entity");
         ProjectDB.ConstDBField e2 = context.mock(ProjectDB.ConstDBField.class,"character.another_entity");
-        entities.add(e1);
-        entities.add(e2);
+        project.entities.add(e1);
+        project.entities.add(e2);
 
         context.checking(new Expectations() {{
-            allowing(e1).getLocation(); will(returnValue(EntityID.fromComponents("character","an_entity")));
-            allowing(e2).getLocation(); will(returnValue(EntityID.fromComponents("character","another_entity")));
-            allowing(project).getEntities();
-            will(returnValue(entities));
+            allowing(e1).getLocation();
+            will(returnValue(EntityID.fromComponents("character", "an_entity")));
+            allowing(e2).getLocation();
+            will(returnValue(EntityID.fromComponents("character", "another_entity")));
         }});
 
         return project;
@@ -761,9 +488,9 @@ public class EntitySourceTest {
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(getDefaultProject());
 
-        EntityID idA = (new EntityID()).child("character").child("an_entity");
-        EntityID idB = (new EntityID()).child("character").child("another_entity");
-        EntityID idC = (new EntityID()).child("character").child("no_such_entity");
+        EntityID idA = EntityID.fromComponents("character", "an_entity");
+        EntityID idB = EntityID.fromComponents("character", "another_entity");
+        EntityID idC = EntityID.fromComponents("character", "no_such_entity");
 
         final Entity entityA = entitySource.getEntityById(idA);
         final Entity entityB = entitySource.getEntityById(idB);
@@ -778,14 +505,17 @@ public class EntitySourceTest {
 
     @Test
     public void testGetEntityTypeByID() throws Exception {
-        final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyData");
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+
+        DummyProject project = new DummyProject(context);
+
+        ProjectDB.ConstDBField e1 = project.addMockEntityType("character", "duped_entity_type");
+        ProjectDB.ConstDBField e2 = project.addMockEntityType("location", "duped_entity_type");
+
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
 
-        EntityID idA = (new EntityID()).child("character").child("duped_entity_type");
-        EntityID idB = (new EntityID()).child("location").child("duped_entity_type");
-
+        EntityID idA = EntityID.fromComponents("character", "duped_entity_type");
+        EntityID idB = EntityID.fromComponents("location", "duped_entity_type");
 
         final EntityType dupedEntityA = entitySource.getEntityTypeByID(idA);
         final EntityType dupedEntityB = entitySource.getEntityTypeByID(idB);
@@ -799,23 +529,30 @@ public class EntitySourceTest {
 
     @Test
     public void testGetEntityTypeByName() {
-        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        //DummyANBFileDirectory root = new DummyANBFileDirectory(asList("root"));
+        //setupDefaultFS(root);
+        DummyProject project = new DummyProject(context);
+        final ProjectDB.ConstDBField dbField = context.mock(ProjectDB.ConstDBField.class);
+        project.entityTypes.add(dbField);
+        context.checking(new Expectations() {{
+            allowing(dbField).getLocation();
+            will(returnValue(EntityID.fromComponents("core","character")));
+        }});
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
-
 
         final EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
         assertThat(characterEntityType, is(notNullValue()));
 
-        assertThat(characterEntityType.id().asString(),is(equalTo("character")));
-        assertThat(characterEntityType.id().components(), is(equalTo(asList("character"))));
+        assertThat(characterEntityType.id().asString(),is(equalTo("core.character")));
+        assertThat(characterEntityType.id().components(), is(equalTo(asList("core","character"))));
     }
 
     @Test
     public void testGetEntityTypeByName_noSuchEntityType() {
-        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        //DummyANBFileDirectory root = new DummyANBFileDirectory(asList("root"));
+        //setupDefaultFS(root);
+        DummyProject project = new DummyProject(context);
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
 
@@ -826,8 +563,21 @@ public class EntitySourceTest {
 
     @Test
     public void testGetEntityTypeByName_multipleEntitiesWithSameName() {
-final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyData");
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        //DummyANBFileDirectory root = new DummyANBFileDirectory(asList("root"));
+        //setupFSWithDupeName(root);
+        DummyProject project = new DummyProject(context);
+        final ProjectDB.ConstDBField dbFieldA = context.mock(ProjectDB.ConstDBField.class,"character.duped_entity_type");
+        project.entityTypes.add(dbFieldA);
+        context.checking(new Expectations() {{
+            allowing(dbFieldA).getLocation();
+            will(returnValue(EntityID.fromComponents("character","duped_entity_type")));
+        }});
+        final ProjectDB.ConstDBField dbFieldB = context.mock(ProjectDB.ConstDBField.class,"location.duped_entity_type");
+        project.entityTypes.add(dbFieldB);
+        context.checking(new Expectations() {{
+            allowing(dbFieldB).getLocation();
+            will(returnValue(EntityID.fromComponents("location","duped_entity_type")));
+        }});
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
 
@@ -843,8 +593,9 @@ final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyDat
 
     @Test
     public void testGetEntityTypeByName_onlyReturnsDirectories() {
-        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        //DummyANBFileDirectory root = new DummyANBFileDirectory(asList("root"));
+        //setupDefaultFS(root);
+        DummyProject project = new DummyProject(context);
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
 
@@ -853,28 +604,16 @@ final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyDat
         assertThat(noSuchEntity, is(nullValue()));
     }
 
-    @Test
-    public void testGetEntityByName_onlyReturnsFiles() {
-         final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
-        EntitySource entitySource = new EntitySource();
-        entitySource.addProject(project);
 
-
-        final Entity aCharacter = entitySource.getEntityByName("an_entity");
-        assertThat(aCharacter, is(notNullValue()));
-
-        final Entity character = entitySource.getEntityByName("character");
-        assertThat(character, is(nullValue()));
-    }
 
 
 
     @Test
     public void testCreateNewEntity() throws Exception {
 
-        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        //DummyANBFileDirectory root = new DummyANBFileDirectory(asList("root"));
+        //setupDefaultFS(root);
+        DummyProject project = new DummyProject(context);
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
 
@@ -882,16 +621,6 @@ final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyDat
         //TODO: Each of these bits needs its own tests.
         final EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
         assertThat(characterEntityType, is(notNullValue()));
-
-        ANBFile some_character = defaultFS.createFile("some_character");
-        context.checking(new Expectations() {{
-            oneOf(defaultFS.file("character")).isWritable();
-            will(returnValue(true));
-            oneOf(defaultFS.file("character")).child("some_character");
-            will(returnValue(some_character));
-            oneOf(some_character).getFS();
-            will(returnValue(defaultFS.fileSystem));
-        }});
 
         fail("NYI - only partially implemented");
 //        Entity entity = entitySource.createNewEntityOfType(characterEntityType,"some_character");
@@ -907,9 +636,21 @@ final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyDat
     @Test
     public void testThatCreatingAnEntityGeneratesAnEvent() throws Exception {
 
-        final SimpleFileSystemDetails defaultFS = setupDefaultFS("/nowhere/dummyData");
+        DummyProject project = new DummyProject(context);
 
-        DummyProject project = new DummyProject(defaultFS.fileSystem, "/nowhere/dummyData");
+        ProjectDB.ConstDBField character_type = context.mock(ProjectDB.ConstDBField.class, "character_type");
+        ProjectDB.ConstDBField an_entity = context.mock(ProjectDB.ConstDBField.class, "an_entity");
+        ProjectDB.ConstDBField another_entity = context.mock(ProjectDB.ConstDBField.class, "another_entity");
+
+        project.entities.add(an_entity);
+        project.entities.add(another_entity);
+        project.entityTypes.add(character_type);
+
+        context.checking(new Expectations() {{
+            allowing(character_type).getLocation();
+            will(returnValue(EntityID.fromComponents("character")));
+        }});
+
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
 
@@ -919,16 +660,6 @@ final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyDat
         //TODO: Each of these bits needs its own tests.
         final EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
         assertThat(characterEntityType, is(notNullValue()));
-
-        ANBFile some_character = defaultFS.createFile("some_character");
-        context.checking(new Expectations() {{
-            allowing(defaultFS.file("character")).isWritable();
-            will(returnValue(true));
-            allowing(defaultFS.file("character")).child("some_character");
-            will(returnValue(some_character));
-            allowing(some_character).getFS();
-            will(returnValue(defaultFS.fileSystem));
-        }});
 
         context.checking(new Expectations() {{
             oneOf(listener).onAddEntity(with(aNonNull(Entity.class)));
@@ -944,6 +675,85 @@ final SimpleFileSystemDetails defaultFS = setupFSWithDupeName("/nowhere/dummyDat
 
     @Test
     public void testAddingAnEntityTypeGeneratesAnEvent() throws Exception {
-        fail("NYI");
+        DummyProject project = new DummyProject(context);
+
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
+
+        List<EntityType> addedEntityTypes = new ArrayList<>();
+
+        entitySource.addListener(new EntitySourceListener() {
+            @Override
+            public void onAddEntity(Entity entity) {
+
+            }
+
+            @Override
+            public void onAddEntityType(EntityType type) {
+                addedEntityTypes.add(type);
+            }
+        });
+
+        EntityType et = new EntityType() {
+
+            EntityID id = EntityID.fromComponents("hello","world");
+
+            @Override
+            public EntityID id() {
+                return id;
+            }
+
+            @Override
+            public void addSourceProject(ANBProject project) {
+
+            }
+
+            @Override
+            public List<ANBProject> getProjects() {
+                return null;
+            }
+        };
+
+        entitySource.createNewEntityType(et);
+
+        assertThat(addedEntityTypes.size(), is(1));
+        assertThat(addedEntityTypes.get(0), is(sameInstance(et)));
+
+        //Now it should show up in the getInstanceTypes...
+        assertThat(entitySource.getEntityTypes(), hasItem(et));
+
+        assertThat(entitySource.getEntityTypeByID(EntityID.fromComponents("hello", "world")), is(sameInstance(et)));
+    }
+
+    @Test
+    public void testEntitiesGetTheirTypeSet() throws Exception {
+        DummyProject project = new DummyProject(context);
+
+        ProjectDB.ConstDBField character_type = context.mock(ProjectDB.ConstDBField.class, "character_type");
+        ProjectDB.ConstDBField an_entity = context.mock(ProjectDB.ConstDBField.class, "an_entity");
+
+        context.checking(new Expectations() {{
+            allowing(an_entity).getLocation();
+            will(returnValue(EntityID.fromComponents("character", "donkey", "ed")));
+
+            allowing(character_type).getLocation();
+            will(returnValue(EntityID.fromComponents("character","donkey")));
+
+        }});
+
+        project.entities.add(an_entity);
+        project.entityTypes.add(character_type);
+
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
+
+        final EntityType entityType = entitySource.getEntityTypeByID(EntityID.fromComponents("character", "donkey"));
+        final Entity entity = entitySource.getEntityById(EntityID.fromComponents("character","donkey","ed"));
+
+        assertThat(entityType, is(notNullValue()));
+        assertThat(entity, is(notNullValue()));
+        assertThat(entity.getType(), is(sameInstance(entityType)));
+
+        //Looks like this needs to be handled at the project level?
     }
 }

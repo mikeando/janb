@@ -5,7 +5,6 @@ import janb.models.EntitySource;
 import janb.models.Model;
 import janb.project.SimpleANBProject;
 import janb.util.ANBFile;
-import janb.util.ANBFileSystem;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -31,11 +30,9 @@ public class Main extends Application {
     public static class SimpleANBFile implements ANBFile {
 
         Path p;
-        SimpleANBFileSystem fs;
 
-        public SimpleANBFile(Path p, SimpleANBFileSystem fs) {
+        public SimpleANBFile(Path p) {
             this.p=p;
-            this.fs=fs;
         }
 
         @Override
@@ -48,17 +45,21 @@ public class Main extends Application {
 
         @Override
         public List<ANBFile> getAllFiles() {
-            File[] files = p.toFile().listFiles();
+
+            final File file = p.toFile();
             List<ANBFile> result = new ArrayList<>();
+
+            if(!file.exists())
+                return result;
+
+            File[] files = file.listFiles();
+            if(files==null)
+                return result;
+
             for(File f:files) {
-                result.add(new SimpleANBFile(f.toPath(),fs));
+                result.add(new SimpleANBFile(f.toPath()));
             }
             return result;
-        }
-
-        @Override
-        public ANBFileSystem getFS() {
-            return fs;
         }
 
         @Override
@@ -73,7 +74,7 @@ public class Main extends Application {
 
         @Override
         public ANBFile child(String name) {
-            return new SimpleANBFile(p.resolve(name),fs);
+            return new SimpleANBFile(p.resolve(name));
         }
 
         @Override
@@ -92,32 +93,48 @@ public class Main extends Application {
         public byte[] readContents() throws IOException {
             return Files.readAllBytes(p);
         }
-    }
-
-    public static class SimpleANBFileSystem implements ANBFileSystem {
 
         @Override
-        public ANBFile getFileForString(String s) {
-            return new SimpleANBFile(Paths.get(s), this);
+        public boolean exists() {
+            return p.toFile().exists();
         }
 
         @Override
-        public void writeFileContents(ANBFile file, byte[] data) throws IOException {
-            SimpleANBFile sanbfile = (SimpleANBFile)file;
-            Files.write(sanbfile.p,data);
+        public boolean hasExtension(String s) {
+            return p.toString().endsWith(s);
         }
 
         @Override
-        public ANBFile makePaths(ANBFile directory, List<String> components) throws IOException {
-            SimpleANBFile sanbdirectory = (SimpleANBFile)directory;
-
-            //TODO: Gotta be a nicer way to do this;
-            Path p = sanbdirectory.p;
-            for(String s:components) {
-                p = p.resolve(s);
+        public ANBFile withoutExtension(String s) {
+            if(!hasExtension(s)) {
+                throw new RuntimeException("File does not have extension '"+s+"'");
             }
-            Files.createDirectories(p);
-            return new SimpleANBFile(p,this);
+            final String pathString = p.toString();
+            pathString.substring(0, pathString.length()-s.length());
+            return new SimpleANBFile(Paths.get(pathString));
+        }
+
+        @Override
+        public ANBFile withExtension(String s) {
+            String pathString=p.toString()+"."+s;
+            return new SimpleANBFile(Paths.get(pathString));
+        }
+
+        @Override
+        public ANBFile createSubdirectory(String s) {
+            throw new RuntimeException("NYI");
+        }
+
+        @Override
+        public void createFile(String s, byte[] rawData) {
+            throw new RuntimeException("NYI");
+        }
+
+        @Override
+        public String toString() {
+            return "SimpleANBFile{" +
+                    "p=" + p +
+                    '}';
         }
     }
 
@@ -129,8 +146,10 @@ public class Main extends Application {
         Parent root = fxmlLoader.load();
 
         Controller sampleController = fxmlLoader.getController();
-        ANBFileSystem fs = new SimpleANBFileSystem();
-        SimpleANBProject project = new SimpleANBProject(fs.getFileForString("/Users/michaelanderson/JANBData/entities"));
+
+        SimpleANBFile rootFile = new SimpleANBFile(Paths.get("/Users/michaelanderson/JANBData"));
+
+        SimpleANBProject project = new SimpleANBProject(rootFile);
 
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
@@ -146,4 +165,6 @@ public class Main extends Application {
         primaryStage.setTitle("FXML Welcome");
         primaryStage.show();
     }
+
+
 }

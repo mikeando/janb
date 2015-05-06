@@ -16,7 +16,7 @@ public class MxlFile implements IMxlFile {
     private String rawContent;
     private MxlText content;
 
-    public MxlFile(String name, MxlMetadataFile metadata, String rawContent) throws MxlConstructionException {
+    public MxlFile(String name, IMxlMetadataFile metadata, String rawContent) throws MxlConstructionException {
         this.name = name;
         this.rawContent = rawContent;
         this.content = new MxlText(rawContent);
@@ -40,10 +40,14 @@ public class MxlFile implements IMxlFile {
         }
     }
 
-    public static MxlFile createAndBind(File f, MxlMetadataFile metadata) throws IOException, MxlConstructionException {
+    public static MxlFile createAndBind(File f, IMxlMetadataFile metadata) throws IOException, MxlConstructionException {
         byte[] bytes = Files.readAllBytes(f.toPath());
-        String content = new String(bytes, Charset.forName("UTF-8"));
-        return new MxlFile(f.getName(), metadata, content);
+        return createAndBind(f.getName(), bytes, metadata);
+    }
+
+    public static MxlFile createAndBind(String name, byte[] bytes, IMxlMetadataFile metadata) throws IOException, MxlConstructionException {
+        String content = (bytes==null) ? "" : new String(bytes, Charset.forName("UTF-8"));
+        return new MxlFile(name, metadata, content);
     }
 
     @Override

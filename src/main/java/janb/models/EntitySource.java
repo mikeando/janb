@@ -13,13 +13,12 @@ public class EntitySource implements IEntitySource {
 
     private final List<ANBProject> projects = new ArrayList<>();
     private final List<EntityType> types = new ArrayList<>();
-    private final Map<EntityID, EntityType> typesMap = new HashMap<>();
     private final List<Entity> entities = new ArrayList<>();
     private List<EntitySourceListener> listeners = new ArrayList<>();
     private EntityMapper mapper = new DefaultEntityMapper();
 
     public EntitySource() {
-        types.add(new EntityType(EntityID.fromComponents()));
+        types.add(new SimpleEntityType(EntityID.fromComponents()));
     }
 
     @Override
@@ -55,6 +54,14 @@ public class EntitySource implements IEntitySource {
     }
 
     @Override
+    public void createNewEntityType(EntityType et) {
+        for (EntitySourceListener listener : listeners) {
+            listener.onAddEntityType(et);
+        }
+        types.add(et);
+    }
+
+    @Override
     public List<Entity> getEntitiesOfType(EntityType type) {
         return entities.stream()
                 .filter(e -> e.getType() == type)
@@ -84,11 +91,27 @@ public class EntitySource implements IEntitySource {
         //TODO: Should ensure mapper is never null.
         if(mapper==null)
             throw new NullPointerException("mapper should not be null");
+
+
+        //TODO: Convert this to a for loop to polpulate the types map.
+        project.getEntityTypes().stream()
+                .map(mapper::mapToEntityType)
+                .forEach(types::add);
+
         project.getEntities().stream()
                 .map(mapper::mapToEntity)
+                .map(this::resolveEntityType)
                 .forEach(entities::add);
+
         //TODO: Rehash any cached info.
         //TODO: Let the listeners know?
+    }
+
+    private Entity resolveEntityType(Entity entity) {
+        EntityID typeID = entity.id().parent();
+        final EntityType entityType = getEntityTypeByID(typeID);
+        entity.setType(entityType);
+        return entity;
     }
 
     @Override
@@ -106,7 +129,9 @@ public class EntitySource implements IEntitySource {
 
     @Override
     public List<EntityType> getChildTypesOfType(EntityType entityType) {
-        throw new RuntimeException("NYI");
+        return types.stream()
+                .filter( v -> EntityID.isDirectChild(entityType.id(),v.id() ))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -116,7 +141,11 @@ public class EntitySource implements IEntitySource {
 
     @Override
     public EntityType getEntityTypeByID(EntityID id) {
-        return typesMap.get(id);
+        for (EntityType type : types) {
+            if(type.id().equals(id))
+                return type;
+        }
+        return null;
     }
 
     @Override

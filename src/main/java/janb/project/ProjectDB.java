@@ -122,9 +122,10 @@ public class ProjectDB {
         }
     }
 
-    public static interface TextField extends DBField {
-        public MutableTextField mutableCopy();
-        public ConstTextField constCopy();
+    public interface TextField extends DBField {
+        MutableTextField mutableCopy();
+        ConstTextField constCopy();
+        String getText();
     }
 
     /**
@@ -132,18 +133,26 @@ public class ProjectDB {
      * Uses MXL for the text and annotations.
      */
     public static class ConstTextField extends AbstractConstDBField implements TextField {
-        public ConstTextField(EntityID location) {
+        private final String text;
+
+        public ConstTextField(EntityID location, String text) {
             super(location);
+            this.text=text;
         }
 
         @Override
         public MutableTextField mutableCopy() {
-            return new MutableTextField(getLocation());
+            return new MutableTextField(getLocation(), text);
         }
 
         @Override
         public ConstTextField constCopy() {
             return this;
+        }
+
+        @Override
+        public String getText() {
+            return text;
         }
 
         @Override
@@ -161,18 +170,26 @@ public class ProjectDB {
 
     public static class MutableTextField extends AbstractMutableDBField implements TextField {
 
-        public MutableTextField(EntityID location) {
+        private final String text;
+
+        public MutableTextField(EntityID location, String text) {
             super(location);
+            this.text = text;
         }
 
         @Override
         public MutableTextField mutableCopy() {
-            return new MutableTextField(getLocation());
+            return new MutableTextField(getLocation(), text);
         }
 
         @Override
         public ConstTextField constCopy() {
-            return new ConstTextField(getLocation());
+            return new ConstTextField(getLocation(), text);
+        }
+
+        @Override
+        public String getText() {
+            return text;
         }
 
         @Override
@@ -181,13 +198,13 @@ public class ProjectDB {
         }
     }
 
-    public static interface CollectionField extends DBField {
-        public MutableCollectionField mutableCopy();
-        public ConstCollectionField constCopy();
+    public interface CollectionField extends DBField {
+        MutableCollectionField mutableCopy();
+        ConstCollectionField constCopy();
         DBField getField(String value);
         //TODO: Should we return more metadata than this?
         Map<String,? extends DBField> getFields();
-        public CollectionField getPrototype();
+        CollectionField getPrototype();
     }
 
     /**
@@ -329,8 +346,8 @@ public class ProjectDB {
     }
 
     public interface ReferenceField extends DBField {
-        public MutableReferenceField mutableCopy();
-        public ConstReferenceField constCopy();
+        MutableReferenceField mutableCopy();
+        ConstReferenceField constCopy();
     }
 
     public static class ConstReferenceField extends AbstractConstDBField implements ReferenceField {

@@ -25,14 +25,14 @@ public class MxlFileTest {
     }
 
     @Test
-    public void testLoadMetadata() throws MxlConstructionException {
-        MxlMetadataFile metadata = new MxlMetadataFile(new File(metadataURL.getPath()));
+    public void testLoadMetadata() throws MxlConstructionException, IOException {
+        IMxlMetadataFile metadata = MxlMetadataFile.fromFile(new File(metadataURL.getPath()));
         assertNotNull(metadata);
     }
 
     @Test
     public void testCreateAndBind() throws MxlConstructionException, IOException {
-        MxlMetadataFile metadata = new MxlMetadataFile(new File(metadataURL.getPath()));
+        IMxlMetadataFile metadata = MxlMetadataFile.fromFile(new File(metadataURL.getPath()));
         assertNotNull(metadata);
 
         MxlFile file = MxlFile.createAndBind( new File(fileURL.getPath()),metadata);
@@ -42,7 +42,7 @@ public class MxlFileTest {
     @Test
     public void testCreateAndBindSetsData() throws MxlConstructionException, IOException {
 
-        MxlMetadataFile metadata = new MxlMetadataFile(new File(metadataURL.getPath()));
+        IMxlMetadataFile metadata = MxlMetadataFile.fromFile(new File(metadataURL.getPath()));
         assertNotNull(metadata);
         MxlFile file = MxlFile.createAndBind( new File(fileURL.getPath()),metadata);
         assertNotNull(file);
@@ -53,7 +53,7 @@ public class MxlFileTest {
 
     @Test
     public void testCreateAndBinSetsAnnotations() throws MxlConstructionException, IOException {
-        MxlMetadataFile metadata = new MxlMetadataFile(new File(metadataURL.getPath()));
+        IMxlMetadataFile metadata = MxlMetadataFile.fromFile(new File(metadataURL.getPath()));
         assertNotNull(metadata);
         MxlFile file = MxlFile.createAndBind( new File(fileURL.getPath()),metadata);
         assertNotNull(file);
@@ -82,16 +82,25 @@ public class MxlFileTest {
     }
 
     @Test
-    public void testCreateAndBinSetsAnnotationsReversed() throws MxlConstructionException, IOException {
-        MxlMetadataFile metadata = new MxlMetadataFile(new File(metadataURL.getPath()));
+    public void testCreateAndBindSetsAnnotationsReversed() throws MxlConstructionException, IOException {
+        IMxlMetadataFile metadata = MxlMetadataFile.fromFile(new File(metadataURL.getPath()));
         assertNotNull(metadata);
-        MxlMetadataFile metadataReversed = new MxlMetadataFile();
 
-        {
-            ArrayList<MxlUnboundAnnotation> annotations = new ArrayList<>(metadata.getUnboundAnnotations());
-            Collections.reverse(annotations);
-            annotations.forEach(metadataReversed::addUnboundAnnotation);
-        }
+        ArrayList<MxlUnboundAnnotation> rev_annotations = new ArrayList<>(metadata.getUnboundAnnotations());
+        Collections.reverse(rev_annotations);
+
+        IMxlMetadataFile metadataReversed = new IMxlMetadataFile() {
+
+            @Override
+            public void addUnboundAnnotation(MxlUnboundAnnotation annotation) {
+                throw new RuntimeException("Not implemented");
+            }
+
+            @Override
+            public List<MxlUnboundAnnotation> getUnboundAnnotations() {
+                return rev_annotations;
+            }
+        };
 
         MxlFile file = MxlFile.createAndBind( new File(fileURL.getPath()),metadataReversed);
         assertNotNull(file);

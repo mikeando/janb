@@ -37,6 +37,9 @@ public class EventListModel extends EntityListModel<EventModel> {
             final EntityID id = entityType.id().child("donkey");
             //TODO: Use a real class for this
             final Entity entity = new Entity() {
+
+                EntityType entityType = EventListModel.this.entityType;
+
                 @Override
                 public EntityID id() {
                     return id;
@@ -45,6 +48,11 @@ public class EventListModel extends EntityListModel<EventModel> {
                 @Override
                 public EntityType getType() {
                     return entityType;
+                }
+
+                @Override
+                public void setType(EntityType entityType) {
+                    this.entityType = entityType;
                 }
             };
             entitySource.saveEntity(entity);

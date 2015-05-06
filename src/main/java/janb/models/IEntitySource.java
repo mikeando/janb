@@ -34,4 +34,6 @@ public interface IEntitySource {
     Entity getEntityByName(String name);
 
     List<MxlFile> getFiles();
+
+    void createNewEntityType(EntityType et);
 }

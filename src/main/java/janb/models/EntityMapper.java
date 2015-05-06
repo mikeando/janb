@@ -7,4 +7,5 @@ import janb.project.ProjectDB;
  */
 public interface EntityMapper {
     Entity mapToEntity(ProjectDB.DBField e1);
+    EntityType mapToEntityType(ProjectDB.DBField entityType);
 }

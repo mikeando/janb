@@ -8,11 +8,11 @@ import java.util.*;
  */
 public class EntityID {
 
-    EntityID(List<String> components) {
+    public EntityID(List<String> components) {
         id=new ArrayList<>(components);
     }
 
-    EntityID() {
+    public EntityID() {
         id=new ArrayList<>();
     }
 
@@ -72,5 +72,20 @@ public class EntityID {
                 return false;
         }
         return true;
+    }
+
+    public EntityID parent() {
+        //TODO: Handle null and/or empty id
+        if(id==null || id.size()==0) {
+            return new EntityID();
+        }
+        return new EntityID(id.subList(0,id.size()-1));
+    }
+
+    public EntityID prepend(String prefix) {
+        ArrayList<String> components=new ArrayList<>();
+        components.add(prefix);
+        components.addAll(id);
+        return new EntityID(components);
     }
 }
