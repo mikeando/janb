@@ -2,9 +2,7 @@ package janb.models;
 
 import janb.Action;
 import janb.controllers.IController;
-import janb.mxl.MxlConstructionException;
-import janb.mxl.MxlFile;
-import janb.mxl.MxlMetadataFile;
+import janb.mxl.IMxlFile;
 import javafx.util.Pair;
 
 import java.io.File;
@@ -24,6 +22,11 @@ public class FileListModel extends AbstractModel {
         this.viewModel = viewModel;
         this.entitySource = entitySource;
         entries = new ArrayList<>();
+        final List<IMxlFile> files = entitySource.getFiles();
+        for(IMxlFile f:files) {
+            System.err.printf("Loading file %s\n", f);
+            entries.add(new FileModel(f, viewModel));
+        }
     }
 
     @Override
@@ -33,8 +36,8 @@ public class FileListModel extends AbstractModel {
 
     @Override
     public List<Pair<String, Action>> getContextActions() {
-        ArrayList<Pair<String,Action>> actions = new ArrayList<>();
-        actions.add( new Pair<>("Add File", this::addNew));
+        ArrayList<Pair<String, Action>> actions = new ArrayList<>();
+        actions.add(new Pair<>("Add File", this::addNew));
         return actions;
     }
 
@@ -50,23 +53,11 @@ public class FileListModel extends AbstractModel {
 
     //TODO: This seems overkill - we should just put the list into a TreeSet or similar.
     private boolean fileListContains(File[] fileList, File f) {
-        for(File ff:fileList) {
-            if(ff.equals(f))
+        for (File ff : fileList) {
+            if (ff.equals(f))
                 return true;
         }
         return false;
     }
-
-    private void loadFiles() {
-        System.err.printf("Loading files from entitySource = %s\n", entitySource);
-
-        for( MxlFile f : entitySource.getFiles() ) {
-            entries.add(new FileModel(f, viewModel));
-        }
-    }
-
-
-
-
 
 }

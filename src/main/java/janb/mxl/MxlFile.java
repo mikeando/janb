@@ -69,4 +69,11 @@ public class MxlFile implements IMxlFile {
     public String getBaseName() {
         return name;
     }
+
+    @Override
+    public String toString() {
+        return "MxlFile{" +
+                "name='" + name + '\'' +
+                '}';
+    }
 }

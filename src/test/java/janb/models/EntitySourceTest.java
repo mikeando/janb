@@ -1,7 +1,6 @@
 package janb.models;
 
 import janb.mxl.IMxlFile;
-import janb.mxl.MxlFile;
 import janb.project.ProjectDB;
 import janb.util.ANBFile;
 import janb.util.dummy.DummyANBFileDirectory;
@@ -13,13 +12,19 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 
 /**
  * Created by michaelanderson on 27/02/2015.
@@ -79,7 +84,7 @@ public class EntitySourceTest {
         public boolean _trySave = false;
 
         List<ProjectDB.ConstDBField> entities = new ArrayList<>();
-        List<MxlFile> files = new ArrayList<>();
+        List<IMxlFile> files = new ArrayList<>();
         List<ProjectDB.ConstDBField> entityTypes = new ArrayList<>();
         List<ProjectDB.ConstDBField> prototypes = new ArrayList<>();
 
@@ -110,8 +115,8 @@ public class EntitySourceTest {
         }
 
         @Override
-        public List<MxlFile> getFiles() {
-            return files;
+        public List<IMxlFile> getFiles() {
+            return Collections.unmodifiableList(files);
         }
 
         @Override
@@ -122,6 +127,18 @@ public class EntitySourceTest {
         @Override
         public void trySave(IMxlFile file, EntityID entityID) {
             throw new RuntimeException("DummyProject.trySave(IMxlFile, EntityID) not yet stubbed");
+        }
+
+        @Override
+        public ProjectDB.ConstDBField createNewEntityOfType(EntityID id, String name) {
+
+            final EntityID entityID = id.child(name);
+            final ProjectDB.ConstDBField dbField = context.mock(ProjectDB.ConstDBField.class, entityID.toString());
+            context.checking(new Expectations() {{
+                allowing(dbField).getLocation();
+                will(returnValue(entityID));
+            }});
+            return dbField;
         }
 
         public ProjectDB.ConstDBField addMockEntity(String... path) {
@@ -390,7 +407,7 @@ public class EntitySourceTest {
 
         DummyProject project = new DummyProject(context);
         project.addMockEntityType("a");
-        project.addMockEntityType("a","b");
+        project.addMockEntityType("a", "b");
         EntitySource entitySourceImpl = new EntitySource();
 
         // Run
@@ -468,7 +485,7 @@ public class EntitySourceTest {
 
         DummyProject project = new DummyProject(context);
         ProjectDB.ConstDBField e1 = context.mock(ProjectDB.ConstDBField.class,"character.an_entity");
-        ProjectDB.ConstDBField e2 = context.mock(ProjectDB.ConstDBField.class,"character.another_entity");
+        ProjectDB.ConstDBField e2 = context.mock(ProjectDB.ConstDBField.class, "character.another_entity");
         project.entities.add(e1);
         project.entities.add(e2);
 
@@ -611,26 +628,46 @@ public class EntitySourceTest {
     @Test
     public void testCreateNewEntity() throws Exception {
 
-        //DummyANBFileDirectory root = new DummyANBFileDirectory(asList("root"));
-        //setupDefaultFS(root);
         DummyProject project = new DummyProject(context);
+        project.addMockEntityType("character");
+
+
         EntitySource entitySource = new EntitySource();
         entitySource.addProject(project);
-
 
         //TODO: Each of these bits needs its own tests.
         final EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
         assertThat(characterEntityType, is(notNullValue()));
 
-        fail("NYI - only partially implemented");
-//        Entity entity = entitySource.createNewEntityOfType(characterEntityType,"some_character");
-//        assertThat(entity, is(notNullValue()));
+        Entity entity = entitySource.createNewEntityOfType(characterEntityType, "some_character");
+        assertThat(entity, is(notNullValue()));
+
+        final Entity entityById = entitySource.getEntityById(EntityID.fromComponents("character", "some_charcter"));
+        assertThat(entityById, is(notNullValue()));
+
+        assertThat(entityById, is(sameInstance(entity)));
+
 //
 //        context.checking(new Expectations() {{
 //            oneOf(defaultFS.fileSystem).writeFileContents(entity.getFile(), "This is a test".getBytes());
 //            }});
 //
 //        entity.saveContents("This is a test".getBytes());
+    }
+
+    @Test
+    public void testEntityTypesRememberTheirProject() throws Exception {
+
+        DummyProject project = new DummyProject(context);
+        project.addMockEntityType("character");
+
+        EntitySource entitySource = new EntitySource();
+        entitySource.addProject(project);
+
+        //TODO: Each of these bits needs its own tests.
+        final EntityType characterEntityType = entitySource.getEntityTypeByShortName("character");
+        assertThat(characterEntityType, is(notNullValue()));
+        assertThat(characterEntityType.getProjects(), hasItem(project));
     }
     
     @Test
@@ -737,7 +774,7 @@ public class EntitySourceTest {
             will(returnValue(EntityID.fromComponents("character", "donkey", "ed")));
 
             allowing(character_type).getLocation();
-            will(returnValue(EntityID.fromComponents("character","donkey")));
+            will(returnValue(EntityID.fromComponents("character", "donkey")));
 
         }});
 
@@ -755,5 +792,16 @@ public class EntitySourceTest {
         assertThat(entity.getType(), is(sameInstance(entityType)));
 
         //Looks like this needs to be handled at the project level?
+    }
+
+    @Test
+    public void mockitoTest() {
+        List mockedList = mock(List.class);
+        mockedList.add("one");
+        mockedList.clear();
+
+        // selective, explicit, highly readable verification
+        verify(mockedList).add("one");
+        verify(mockedList).clear();
     }
 }

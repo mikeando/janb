@@ -1,9 +1,12 @@
 package janb.models;
 
-import janb.mxl.MxlFile;
+import janb.mxl.IMxlFile;
 import janb.project.ProjectDB;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -45,8 +48,8 @@ public class EntitySource implements IEntitySource {
     }
 
     @Override
-    public List<MxlFile> getFiles() {
-        List<MxlFile> result = new ArrayList<>();
+    public List<IMxlFile> getFiles() {
+        List<IMxlFile> result = new ArrayList<>();
         for (ANBProject project : projects) {
             result.addAll(project.getFiles());
         }
@@ -59,6 +62,22 @@ public class EntitySource implements IEntitySource {
             listener.onAddEntityType(et);
         }
         types.add(et);
+    }
+
+    @Override
+    public Entity createNewEntityOfType(EntityType entityType, String name) {
+        // Find the project supporting the entityType, and then ask it to create
+        // then underlying Entity data, then use the loader to get it into the right form.
+        // TODO: What if more than one project has the same
+        final List<ANBProject> projects = entityType.getProjects();
+        if(projects==null || projects.size()==0)
+            throw new RuntimeException("EntityType not found");
+
+        ANBProject project = projects.get(0);
+        ProjectDB.ConstDBField data = project.createNewEntityOfType(entityType.id(), name);
+        Entity e = mapper.mapToEntity(data);
+        entities.add(e);
+        return e;
     }
 
     @Override
@@ -96,7 +115,7 @@ public class EntitySource implements IEntitySource {
         //TODO: Convert this to a for loop to polpulate the types map.
         project.getEntityTypes().stream()
                 .map(mapper::mapToEntityType)
-                .forEach(types::add);
+                .forEach( type -> registerType(project,type) );
 
         project.getEntities().stream()
                 .map(mapper::mapToEntity)
@@ -105,6 +124,11 @@ public class EntitySource implements IEntitySource {
 
         //TODO: Rehash any cached info.
         //TODO: Let the listeners know?
+    }
+
+    private void registerType(ANBProject project, EntityType entityType) {
+        types.add(entityType);
+        entityType.addSourceProject(project);
     }
 
     private Entity resolveEntityType(Entity entity) {

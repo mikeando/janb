@@ -121,6 +121,8 @@ public class SimpleANBProject implements ANBProject {
             ANBFile metaDataFile;
             ANBFile dataFile;
 
+            System.err.printf("SimpleANBProject.loadFiles() - loading %s\n", file);
+
             //TODO: Not sure these belong in ANBFile, or some utils class.
             if (file.hasExtension(".mxl")) {
                 metaDataFile = file;
@@ -130,17 +132,23 @@ public class SimpleANBProject implements ANBProject {
                 metaDataFile = file.withExtension(".mxl");
             }
 
+            System.err.printf("   - metaDataFile = %s\n", metaDataFile);
+            System.err.printf("   - dataFile = %s\n", dataFile);
+
             //TODO: Not sure a RTE is the right thing to do here.
             if (dataFile == null || !dataFile.exists()) {
                 throw new RuntimeException("File no longer exists");
             }
 
             collectionAddIfNonNull(processedFiles, metaDataFile);
-            collectionAddIfNonNull(processedFiles,dataFile);
+            collectionAddIfNonNull(processedFiles, dataFile);
+
 
             if (metaDataFile!=null && metaDataFile.exists()) {
+                System.err.printf("    - loading with metadata...\n");
                 collectionAddIfNonNull(files, loadMxlFile(dataFile, metaDataFile));
             } else {
+                System.err.printf("    - loading without metadata...\n");
                 collectionAddIfNonNull(files, loadRawFile(dataFile));
             }
         }
@@ -309,6 +317,13 @@ public class SimpleANBProject implements ANBProject {
     }
 
     @Override
+    public ProjectDB.ConstDBField createNewEntityOfType(EntityID id, String name) {
+        //TODO: Really needs to be hooked into the tree.
+        //      And saved to disk?
+        return new ProjectDB.ConstCollectionField(id.child(name), new HashMap<>(), null);
+    }
+
+    @Override
     public ProjectDB.ConstDBField getEntityById(EntityID id) {
         if(id==null)
             throw new NullPointerException("id can not be null");
@@ -331,8 +346,8 @@ public class SimpleANBProject implements ANBProject {
 
 
     @Override
-    public List<MxlFile> getFiles() {
-        return files;
+    public List<IMxlFile> getFiles() {
+        return Collections.unmodifiableList(files);
     }
 
     @Override

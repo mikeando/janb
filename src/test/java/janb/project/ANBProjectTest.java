@@ -267,9 +267,9 @@ public class ANBProjectTest {
         DummyANBFileDirectory sourcePath = new DummyANBFileDirectory(null, asList("project_path"));
 
         final DummyANBFileDirectory filesDirectory = sourcePath.addChildDirectory("files");
-        DummyANBFileNormal fileA = filesDirectory.addChildFile("a.txt");
+        DummyANBFileNormal fileA = filesDirectory.addChildFile("a.md");
         fileA.content = "⟪A⟪This⟫A⟫ is a ⟪B⟪note⟫B⟫ - its ⟪C⟪very interesting⟫C⟫.".getBytes(StandardCharsets.UTF_8);
-        DummyANBFileNormal fileAmxl = filesDirectory.addChildFile("a.txt.mxl");
+        DummyANBFileNormal fileAmxl = filesDirectory.addChildFile("a.md.mxl");
         fileAmxl.content = ("annotations :\n" +
                 "  - { start : \"⟪A⟪\", end : \"⟫A⟫\", note: \"A note\" }\n" +
                 "  - { start : \"⟪B⟪\", end : \"⟫B⟫\", note: \"Another note\" }\n" +
@@ -321,7 +321,7 @@ public class ANBProjectTest {
         ANBFile sourcePath = emptyProject();
         SimpleANBProject project = new SimpleANBProject(sourcePath);
 
-        final List<MxlFile> files = project.getFiles();
+        final List<IMxlFile> files = project.getFiles();
         assertThat(files, is(notNullValue()));
         assertThat(files.size(), is(0));
     }
@@ -331,7 +331,7 @@ public class ANBProjectTest {
         ANBFile sourcePath = simpleProject();
         SimpleANBProject project = new SimpleANBProject(sourcePath);
 
-        final List<MxlFile> files = project.getFiles();
+        final List<IMxlFile> files = project.getFiles();
         assertThat(files, is(notNullValue()));
         assertThat(files.size(), is(2));
     }
@@ -341,11 +341,11 @@ public class ANBProjectTest {
         ANBFile sourcePath = simpleProjectWithMxlFiles();
         SimpleANBProject project = new SimpleANBProject(sourcePath);
 
-        final List<MxlFile> files = project.getFiles();
+        final List<IMxlFile> files = project.getFiles();
         assertThat(files, is(notNullValue()));
         assertThat(files.size(), is(1));
 
-        final MxlFile mxlFile = files.get(0);
+        final MxlFile mxlFile = (MxlFile) files.get(0);
         final List<MxlAnnotation> annotations = mxlFile.getAnnotations();
         assertThat(annotations.size(),is(3));
     }

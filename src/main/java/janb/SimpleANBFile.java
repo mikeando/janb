@@ -103,7 +103,7 @@ public class SimpleANBFile implements ANBFile {
 
     @Override
     public ANBFile withExtension(String s) {
-        String pathString = p.toString() + "." + s;
+        String pathString = p.toString() + s;
         return new SimpleANBFile(Paths.get(pathString));
     }
 
@@ -122,5 +122,21 @@ public class SimpleANBFile implements ANBFile {
         return "SimpleANBFile{" +
                 "p=" + p +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass()  != o.getClass()) return false;
+
+        SimpleANBFile that = (SimpleANBFile) o;
+
+        return !(p != null ? !p.equals(that.p) : that.p != null);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return p != null ? p.hashCode() : 0;
     }
 }

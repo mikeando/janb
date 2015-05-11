@@ -1,6 +1,6 @@
 package janb.models;
 
-import janb.mxl.MxlFile;
+import janb.mxl.IMxlFile;
 
 import java.util.List;
 
@@ -33,7 +33,10 @@ public interface IEntitySource {
     //TODO: Is this needed
     Entity getEntityByName(String name);
 
-    List<MxlFile> getFiles();
+    //TODO: This should return IMxlFile
+    List<IMxlFile> getFiles();
 
     void createNewEntityType(EntityType et);
+
+    Entity createNewEntityOfType(EntityType characterEntityType, String name);
 }
