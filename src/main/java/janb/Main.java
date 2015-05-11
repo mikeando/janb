@@ -1,6 +1,7 @@
 package janb;
 
 import janb.controllers.Controller;
+import janb.controllers.StartController;
 import janb.models.EntitySource;
 import janb.models.Model;
 import janb.project.SimpleANBProject;
@@ -20,8 +21,21 @@ public class Main extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) throws Exception{
+    public void start(Stage primaryStage) throws Exception {
 
+        final URL rootFxmlUrl = getClass().getResource("../../../resources/main/start_page.fxml");
+        FXMLLoader fxmlLoader = new FXMLLoader(rootFxmlUrl);
+        Parent root = fxmlLoader.load();
+
+        StartController startController = fxmlLoader.getController();
+        startController.setMain(this, primaryStage);
+
+        primaryStage.setScene(new Scene(root, 300, 550));
+        primaryStage.setTitle("FXML Welcome");
+        primaryStage.show();
+    }
+
+    public void loadProject(Stage primaryStage) throws Exception {
         final URL rootFxmlUrl = getClass().getResource("../../../resources/main/sample.fxml");
         FXMLLoader fxmlLoader = new FXMLLoader(rootFxmlUrl);
         Parent root = fxmlLoader.load();
