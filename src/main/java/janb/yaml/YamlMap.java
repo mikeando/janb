@@ -18,7 +18,7 @@ public class YamlMap extends YamlValue<Map>{
         return data;
     }
 
-    public YamlValue getChild(String childName) throws YamlConversionException {
+    public YamlValue getChild(String childName) {
         return new YamlValue(data.get(childName), path.child(childName));
     }
 

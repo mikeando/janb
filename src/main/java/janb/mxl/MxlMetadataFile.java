@@ -18,21 +18,21 @@ public class MxlMetadataFile implements IMxlMetadataFile {
 
 
 
-    public static interface MxlMetadataSource {
+    public interface MxlMetadataSource {
 
     }
 
     public static class MxlMetadataSourceFromFile implements MxlMetadataSource {
         private File source;
 
-        public MxlMetadataSourceFromFile(File source) {
+        public MxlMetadataSourceFromFile(final File source) {
             this.source = source;
         }
     }
 
     //TODO: Make these final.
     private MxlMetadataSource source;
-    private List<MxlUnboundAnnotation> annotations = new ArrayList<>();
+    private final List<MxlUnboundAnnotation> annotations = new ArrayList<>();
 
     public static IMxlMetadataFile fromFile(File source) throws MxlConstructionException, IOException {
         try(FileInputStream is = new FileInputStream(source)) {
@@ -45,43 +45,16 @@ public class MxlMetadataFile implements IMxlMetadataFile {
         Yaml yaml = new Yaml();
         //TODO: This is not a safe way to load YAML aparently....
         Object yamlData = yaml.load(is);
-        return fromYaml(yamlData,source);
-    }
-
-    public static IMxlMetadataFile fromYaml(Object yamlData, MxlMetadataSource source) throws MxlConstructionException {
         MxlMetadataFile result = new MxlMetadataFile();
         result.source = source;
 
-        if(yamlData==null)
+        if(yamlData ==null)
             throw new MxlConstructionException(String.format("Unable to load YAML in .MXL file %s\n", source));
 
         try {
             YamlMap rootElement = YamlUtils.getRootAsMap(yamlData);
 
-            rootElement.onAllChildren( new YamlMapCallback() {
-                @Override
-                public void onMap(String key, YamlMap value) {
-
-                    System.err.printf("key=%s is a map : %s\n", key, value);
-                }
-
-                @Override
-                public void onList(String key, YamlList value) throws MxlConstructionException {
-                    if(key.equals("annotations")) {
-                        result.buildAnnotations(value);
-                        return;
-                    }
-                    System.err.printf("key=%s is a list : %s\n", key, value);
-                }
-
-                @Override
-                public void onString(String key, YamlString value) throws MxlConstructionException {
-                    throw new MxlConstructionException(
-                            String.format("Error loading YAML in .mxl file %s : Non map element found in root for key %s", source, key)
-                    );
-                }
-
-            });
+            rootElement.onAllChildren(new MxlMetadataFromYamlBuilder(result, source));
 
             return result;
         } catch (YamlConversionException e) {
@@ -122,5 +95,37 @@ public class MxlMetadataFile implements IMxlMetadataFile {
     @Override
     public List<MxlUnboundAnnotation> getUnboundAnnotations() {
         return annotations;
+    }
+
+    private static class MxlMetadataFromYamlBuilder implements YamlMapCallback {
+        private final MxlMetadataFile result;
+        private final MxlMetadataSource source;
+
+        public MxlMetadataFromYamlBuilder(MxlMetadataFile result, MxlMetadataSource source) {
+            this.result = result;
+            this.source = source;
+        }
+
+        @Override
+        public void onMap(String key, YamlMap value) {
+            System.err.printf("key=%s is a map : %s\n", key, value);
+        }
+
+        @Override
+        public void onList(String key, YamlList value) throws MxlConstructionException {
+            if("annotations".equals(key)) {
+                result.buildAnnotations(value);
+                return;
+            }
+            System.err.printf("key=%s is a list : %s\n", key, value);
+        }
+
+        @Override
+        public void onString(String key, YamlString value) throws MxlConstructionException {
+            throw new MxlConstructionException(
+                    String.format("Error loading YAML in .mxl file %s : Non map element found in root for key %s", source, key)
+            );
+        }
+
     }
 }
